@@ -1,0 +1,7 @@
+# Third-party integrations and attribution
+
+- **OrcaReplay**, Continuum AI Corp / OrcaRouter team: https://github.com/Continuum-AI-Corp/OrcaReplay. Runtime development dependencies `@orcareplay/core` and `@orcareplay/schema` are pinned to **0.2.4**, Apache-2.0. Repository inspected at commit `0d78203d6fc03465b84f844c3e0bfd019ae10dc5`. The Orca Trace Format v0 specification is CC BY 4.0; this project independently implements its audit event envelope and uses the published schema for validation. No claim of compatibility with execution replay is made.
+- **Harness Engineering**, Ryan Lopopolo: https://github.com/lopopolo/harness-engineering, commit `226c8d35fb6ea3ed55467753dba6dea2b5fd5778`. Repository-authored guidance is CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). The authority and proof ideas have been adapted into JobPilot's domain contracts and checks. The original corpus is not vendored and its third-party source material is not redistributed. This attribution does not imply endorsement.
+- **Freehire**: https://freehire.me and the existing `.agents/skills/freehire-search` API adapter contract. Production search uses the public agent search endpoint directly through Workers `fetch`; the Bun CLI is not run in the Worker. Source availability and data quality are independently owned by that service.
+
+Other package licenses are included in their npm distributions and tracked by `package-lock.json`. The Cloudflare-hosted model has its own provider/model terms. No dependency source has been copied into this platform.

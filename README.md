@@ -388,3 +388,8 @@ Thinking about a PR? Read [CONTRIBUTING.md](CONTRIBUTING.md) first - it explains
 ## License
 
 MIT
+
+
+## Hosted web and iOS platform
+
+The [JobPilot platform](platform/README.md) adds a Cloudflare Workers backend, a paid web workspace, and a native iOS controller, with OrcaReplay audit exports and harness-engineering contracts. Run the local demo with `cd platform && npm ci && npm run dev`. See its README for production configuration and verification boundaries.

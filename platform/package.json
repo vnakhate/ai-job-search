@@ -1,0 +1,35 @@
+{
+  "name": "jobpilot-platform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "context": "node scripts/build-context.mjs",
+    "dev": "npm run build && wrangler dev --env local --port 8797",
+    "build": "npm run context && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run context && vitest run",
+    "check": "npm run context && npm run typecheck && npm test && npm run build",
+    "deploy": "npm run check && node scripts/preflight.mjs && wrangler deploy --env=\"\"",
+    "orca:export": "node scripts/export-orca.mjs",
+    "test:browser": "npm run test:uat",
+    "format": "prettier --write worker/*.ts web/*.{ts,css,html} scripts/*.mjs tests/**/*.ts *.ts *.json *.jsonc",
+    "test:unit": "npm test",
+    "test:uat": "playwright test"
+  },
+  "dependencies": {
+    "jose": "^6.1.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260911.1",
+    "@orcareplay/core": "0.2.4",
+    "@orcareplay/schema": "0.2.4",
+    "@playwright/test": "^1.55.0",
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0",
+    "vitest": "^4.1.11",
+    "wrangler": "4.131.1"
+  }
+}

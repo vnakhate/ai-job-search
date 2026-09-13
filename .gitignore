@@ -122,3 +122,15 @@ company_research/*.json
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 graft/
+
+# Hosted product build/runtime state
+platform/node_modules/
+platform/dist/
+platform/.wrangler/
+platform/.dev.vars*
+platform/worker/context.generated.json
+platform/test-results/
+platform/playwright-report/
+platform/.orca/
+platform/ios/build/
+platform/ios/*.xcodeproj/
