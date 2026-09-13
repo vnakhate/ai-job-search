@@ -116,3 +116,9 @@ company_research/*.json
 
 # Brainstorm mockups (superpowers visual companion) - never ship
 .superpowers/
+
+# graft's local repository settings — not committed.
+/.graft/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+graft/

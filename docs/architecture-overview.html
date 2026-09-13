@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Job Search — Architecture Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============ THEME: editorial, paper + navy + gold ============ */
+  :root {
+    --font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+    --font-body: 'DM Sans', 'Avenir Next', 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+    --bg: #f6f2ea;
+    --surface: #fffdf9;
+    --surface2: #efe9dd;
+    --surface-elevated: #fbf7ef;
+    --border: rgba(30, 40, 60, 0.09);
+    --border-bright: rgba(30, 40, 60, 0.2);
+    --text: #1b2432;
+    --text-dim: #66707f;
+
+    --navy: #1e3a5f;        --navy-dim: rgba(30, 58, 95, 0.08);
+    --gold: #a8780a;        --gold-dim: rgba(184, 134, 11, 0.12);
+    --oxblood: #8b2e3a;     --oxblood-dim: rgba(139, 46, 58, 0.09);
+    --moss: #4f6f3a;        --moss-dim: rgba(79, 111, 58, 0.10);
+    --slate: #2f6f73;       --slate-dim: rgba(47, 111, 115, 0.10);
+    --ink: #3a3a3a;         --ink-dim: rgba(58, 58, 58, 0.07);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161d;
+      --surface: #181d26;
+      --surface2: #1f2530;
+      --surface-elevated: #1c2330;
+      --border: rgba(255, 255, 255, 0.07);
+      --border-bright: rgba(255, 255, 255, 0.16);
+      --text: #e8e2d6;
+      --text-dim: #9aa3b0;
+
+      --navy: #8fb3e0;      --navy-dim: rgba(143, 179, 224, 0.12);
+      --gold: #d4a73a;      --gold-dim: rgba(212, 167, 58, 0.14);
+      --oxblood: #e08590;   --oxblood-dim: rgba(224, 133, 144, 0.13);
+      --moss: #a3c684;      --moss-dim: rgba(163, 198, 132, 0.13);
+      --slate: #7cc4c8;     --slate-dim: rgba(124, 196, 200, 0.13);
+      --ink: #c8c2b6;       --ink-dim: rgba(200, 194, 182, 0.09);
+    }
+  }
+
+  /* ============ RESET + BASE ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      linear-gradient(to right, var(--border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--border) 1px, transparent 1px),
+      radial-gradient(ellipse at 12% 0%, var(--gold-dim) 0%, transparent 45%),
+      radial-gradient(ellipse at 90% 30%, var(--navy-dim) 0%, transparent 40%);
+    background-size: 48px 48px, 48px 48px, 100% 100%, 100% 100%;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+    padding: 0 40px 80px;
+    min-height: 100vh;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    background: var(--navy-dim);
+    color: var(--navy);
+    padding: 1px 6px;
+    border-radius: 4px;
+    overflow-wrap: anywhere;
+  }
+
+  /* ============ ANIMATION ============ */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+  .a  { animation: fadeUp 0.45s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+  .as { animation: fadeScale 0.45s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ============ NAV ============ */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    margin: 0 -40px 32px; padding: 10px 40px;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 4px; overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a {
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.4px;
+    color: var(--text-dim); padding: 6px 10px; border-radius: 6px;
+    white-space: nowrap; transition: background 0.15s, color 0.15s;
+  }
+  .nav a:hover { background: var(--surface2); color: var(--text); }
+  .nav .brand {
+    font-family: var(--font-display); font-style: italic; font-size: 17px;
+    color: var(--text); padding-right: 18px; margin-right: 6px;
+    border-right: 1px solid var(--border);
+  }
+
+  /* ============ LAYOUT ============ */
+  .page { max-width: 1140px; margin: 0 auto; }
+  section { margin-bottom: 56px; }
+
+  /* ============ HEADER ============ */
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.8px;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .eyebrow .sep { color: var(--border-bright); }
+  h1 {
+    font-family: var(--font-display); font-weight: 400;
+    font-size: clamp(44px, 6vw, 72px); line-height: 0.98; letter-spacing: -1.5px;
+    margin-bottom: 18px; text-wrap: balance;
+  }
+  h1 em { font-style: italic; color: var(--navy); }
+  .lead {
+    font-size: 19px; line-height: 1.5; max-width: 760px; color: var(--text);
+    margin-bottom: 8px;
+  }
+  .lead-sub { font-size: 14.5px; color: var(--text-dim); max-width: 760px; }
+
+  h2 {
+    font-family: var(--font-display); font-weight: 400; font-size: 34px;
+    letter-spacing: -0.6px; line-height: 1.05; margin-bottom: 6px;
+  }
+  h2 em { font-style: italic; color: var(--gold); }
+  .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; }
+  .section-head p { color: var(--text-dim); font-size: 14px; max-width: 560px; }
+  .section-num {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.6px; color: var(--text-dim);
+    display: block; margin-bottom: 8px;
+  }
+  .section-num::before { content: ''; display: inline-block; width: 22px; height: 1px; background: var(--gold); margin-right: 10px; vertical-align: middle; }
+
+  /* ============ KPI STRIP ============ */
+  .kpis {
+    display: grid; grid-template-columns: 1.6fr repeat(4, 1fr); gap: 12px;
+    margin-top: 32px;
+  }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px; min-width: 0;
+  }
+  .kpi--hero {
+    background: var(--surface-elevated);
+    border-color: color-mix(in srgb, var(--border) 40%, var(--gold) 60%);
+    box-shadow: 0 8px 28px rgba(30, 40, 60, 0.08);
+    padding: 22px 26px;
+  }
+  .kpi .n { font-family: var(--font-display); font-size: 44px; line-height: 1; color: var(--navy); font-variant-numeric: tabular-nums; }
+  .kpi--hero .n { font-size: 64px; color: var(--gold); }
+  .kpi .l { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin-top: 8px; }
+  .kpi .d { font-size: 12.5px; color: var(--text-dim); margin-top: 6px; line-height: 1.45; }
+  .kpi--hero .d { color: var(--text); font-size: 13.5px; }
+
+  /* ============ CARDS ============ */
+  .ve-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 22px 24px; min-width: 0;
+  }
+  .ve-card--hero {
+    background: var(--surface-elevated);
+    border-color: color-mix(in srgb, var(--border) 50%, var(--navy) 50%);
+    box-shadow: 0 10px 34px rgba(30, 40, 60, 0.09);
+  }
+  .ve-card--recessed { background: var(--surface2); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+
+  .ve-label {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px; color: var(--text-dim);
+  }
+  .ve-label .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .ve-label .path { margin-left: auto; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-dim); opacity: 0.85; }
+
+  .c-navy .ve-label { color: var(--navy); }     .c-navy { border-top: 3px solid var(--navy); }
+  .c-gold .ve-label { color: var(--gold); }     .c-gold { border-top: 3px solid var(--gold); }
+  .c-ox .ve-label { color: var(--oxblood); }    .c-ox { border-top: 3px solid var(--oxblood); }
+  .c-moss .ve-label { color: var(--moss); }     .c-moss { border-top: 3px solid var(--moss); }
+  .c-slate .ve-label { color: var(--slate); }   .c-slate { border-top: 3px solid var(--slate); }
+  .c-ink .ve-label { color: var(--ink); }       .c-ink { border-top: 3px solid var(--ink); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-2 > *, .grid-3 > * { min-width: 0; }
+
+  .list { list-style: none; font-size: 13.5px; line-height: 1.55; }
+  .list li { padding: 7px 0 7px 16px; position: relative; border-bottom: 1px dashed var(--border); overflow-wrap: break-word; }
+  .list li:last-child { border-bottom: none; }
+  .list li::before { content: '›'; position: absolute; left: 0; top: 6px; color: var(--gold); font-weight: 600; }
+  .list li b { font-weight: 600; }
+  .list li small { color: var(--text-dim); display: block; font-size: 12.5px; }
+  .list.tight li { padding: 4px 0 4px 16px; border-bottom: none; }
+
+  .cmd { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--navy); }
+  .badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.6px;
+    padding: 2px 7px; border-radius: 999px; border: 1px solid var(--border-bright);
+    color: var(--text-dim); vertical-align: middle; margin-left: 6px; white-space: nowrap;
+  }
+  .badge--gold { color: var(--gold); border-color: var(--gold); background: var(--gold-dim); }
+  .badge--ox { color: var(--oxblood); border-color: var(--oxblood); background: var(--oxblood-dim); }
+  .badge--moss { color: var(--moss); border-color: var(--moss); background: var(--moss-dim); }
+  .badge--slate { color: var(--slate); border-color: var(--slate); background: var(--slate-dim); }
+
+  /* ============ MERMAID ============ */
+  .mermaid-wrap {
+    position: relative; overflow: auto; padding: 28px 20px;
+    scrollbar-width: thin; scrollbar-color: var(--border-bright) transparent;
+  }
+  .mermaid-wrap .mermaid { display: block; margin: 0 auto; }
+  .mermaid-wrap .mermaid svg { display: block; transform-origin: top left; transition: transform 0.2s ease; }
+  .mermaid-wrap.is-zoomed { cursor: grab; }
+  .mermaid-wrap.is-panning { cursor: grabbing; user-select: none; }
+  .zoom-controls {
+    position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 2px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2px;
+  }
+  .zoom-controls button {
+    width: 28px; height: 28px; border: none; background: transparent; color: var(--text-dim);
+    font-family: var(--font-mono); font-size: 14px; cursor: pointer; border-radius: 4px;
+  }
+  .zoom-controls button:hover { background: var(--surface2); color: var(--text); }
+
+  .mermaid .nodeLabel { font-family: var(--font-body) !important; font-size: 15px !important; color: var(--text) !important; line-height: 1.3; }
+  .mermaid .nodeLabel b { font-weight: 600; }
+  .mermaid .nodeLabel small { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); display: block; margin-top: 3px; }
+  .mermaid .edgeLabel { font-family: var(--font-mono) !important; font-size: 11.5px !important; color: var(--text-dim) !important; }
+  .mermaid .edgeLabel .labelBkg, .mermaid .edgeLabel rect { background: var(--surface) !important; fill: var(--surface) !important; }
+  .mermaid .edgePath path, .mermaid .flowchart-link { stroke-width: 1.6px !important; }
+  .mermaid .node rect, .mermaid .node path, .mermaid .node polygon { stroke-width: 1.5px !important; }
+
+  .mermaid .lUser rect  { fill: var(--gold-dim) !important; stroke: var(--gold) !important; }
+  .mermaid .lCmd rect   { fill: var(--navy-dim) !important; stroke: var(--navy) !important; }
+  .mermaid .lSkill rect { fill: var(--navy-dim) !important; stroke: var(--navy) !important; stroke-dasharray: 5 3; }
+  .mermaid .lPort rect  { fill: var(--moss-dim) !important; stroke: var(--moss) !important; }
+  .mermaid .lExt rect   { fill: var(--surface2) !important; stroke: var(--border-bright) !important; }
+  .mermaid .lTool rect  { fill: var(--slate-dim) !important; stroke: var(--slate) !important; }
+  .mermaid .lRev rect   { fill: var(--oxblood-dim) !important; stroke: var(--oxblood) !important; }
+  .mermaid .lState path { fill: var(--ink-dim) !important; stroke: var(--ink) !important; }
+  .mermaid .lOut rect   { fill: var(--gold-dim) !important; stroke: var(--gold) !important; }
+
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; padding: 14px 20px 0; border-top: 1px solid var(--border); margin-top: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; border: 1.5px solid; }
+
+  /* ============ PIPELINE ============ */
+  .pipeline { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding: 6px 2px 10px; scrollbar-width: thin; }
+  .pipeline--fit .step { flex: 1 1 140px; min-width: 140px; }
+  .pipeline--wrap { flex-wrap: wrap; row-gap: 14px; overflow: visible; }
+  .pipeline--wrap .step { flex: 1 1 200px; min-width: 200px; }
+  .step {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; min-width: 0; position: relative;
+  }
+  .step .num { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; letter-spacing: 1px; margin-bottom: 6px; }
+  .step .name { font-family: var(--font-display); font-size: 21px; line-height: 1.05; margin-bottom: 6px; }
+  .step .name .cmd { font-size: 15px; display: block; margin-bottom: 4px; }
+  .step .detail { font-size: 12px; color: var(--text-dim); line-height: 1.45; }
+  .step--navy { border-top: 3px solid var(--navy); }  .step--navy .num { color: var(--navy); }
+  .step--gold { border-top: 3px solid var(--gold); }  .step--gold .num { color: var(--gold); }
+  .step--moss { border-top: 3px solid var(--moss); }  .step--moss .num { color: var(--moss); }
+  .step--ox   { border-top: 3px solid var(--oxblood); } .step--ox .num { color: var(--oxblood); }
+  .step--slate{ border-top: 3px solid var(--slate); } .step--slate .num { color: var(--slate); }
+  .step--ink  { border-top: 3px solid var(--ink); }   .step--ink .num { color: var(--ink); }
+  .step.is-core { background: var(--surface-elevated); box-shadow: 0 6px 20px rgba(30,40,60,0.08); }
+  .step .orbit { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .step .orbit span {
+    font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border);
+  }
+  .arrow { display: flex; align-items: center; padding: 0 6px; flex-shrink: 0; color: var(--border-bright); }
+  .arrow svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .arrow.loop { flex-direction: column; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); gap: 2px; padding: 0 4px; }
+
+  /* ============ TABLE ============ */
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    position: sticky; top: 0; background: var(--surface2); font-family: var(--font-mono); font-size: 10.5px;
+    letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); text-align: left; padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface2) 45%, transparent); }
+  tbody tr:hover td { background: var(--navy-dim); }
+  td small { color: var(--text-dim); display: block; font-size: 12px; }
+  td .cmd { font-size: 12px; }
+  .status { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; }
+  .status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .st-on { color: var(--moss); } .st-opt { color: var(--gold); } .st-off { color: var(--text-dim); }
+
+  /* ============ CALLOUT / QUOTE ============ */
+  .callout {
+    background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--gold);
+    border-radius: 0 10px 10px 0; padding: 16px 20px; font-size: 13.5px; line-height: 1.6; color: var(--text-dim);
+  }
+  .callout strong { color: var(--text); font-weight: 600; }
+  .callout--ox { border-left-color: var(--oxblood); }
+  .pull {
+    font-family: var(--font-display); font-size: 26px; line-height: 1.25; font-style: italic;
+    color: var(--navy); max-width: 720px; margin: 8px 0 28px; padding-left: 20px;
+    border-left: 2px solid var(--gold);
+  }
+  .pull small { display: block; font-family: var(--font-mono); font-style: normal; font-size: 11px; letter-spacing: 1px; color: var(--text-dim); margin-top: 10px; }
+
+  /* ============ DATA FLOW: tracked vs personal ============ */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .split > * { min-width: 0; }
+  .file-row { display: flex; gap: 12px; align-items: flex-start; padding: 9px 0; border-bottom: 1px dashed var(--border); font-size: 13px; }
+  .file-row:last-child { border-bottom: none; }
+  .file-row code { flex-shrink: 0; }
+  .file-row span { color: var(--text-dim); min-width: 0; overflow-wrap: anywhere; }
+
+  /* ============ DETAILS ============ */
+  details { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  summary {
+    cursor: pointer; padding: 14px 20px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.6px;
+    color: var(--text-dim); list-style: none; display: flex; align-items: center; gap: 10px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: '+'; font-weight: 600; color: var(--gold); width: 14px; }
+  details[open] summary::before { content: '−'; }
+  details .inner { padding: 0 20px 20px; }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 900px) {
+    .kpis { grid-template-columns: 1fr 1fr; }
+    .kpi--hero { grid-column: 1 / -1; }
+    .grid-3 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    body { padding: 0 18px 60px; }
+    .nav { margin: 0 -18px 24px; padding: 10px 18px; }
+    .grid-2, .split { grid-template-columns: 1fr; }
+    h2 { font-size: 28px; }
+    .kpis { grid-template-columns: 1fr 1fr; }
+    .pipeline { flex-wrap: wrap; row-gap: 10px; overflow: visible; }
+    .pipeline .step { flex: 1 1 100%; min-width: 0; }
+    .pipeline .arrow { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="#top">AI Job Search</a>
+  <a href="#overview">01 Overview</a>
+  <a href="#workflow">02 Workflow</a>
+  <a href="#apply">03 Inside /apply</a>
+  <a href="#layers">04 Layers</a>
+  <a href="#data">05 Data &amp; state</a>
+  <a href="#guardrails">06 Guardrails</a>
+  <a href="#extend">07 Extension points</a>
+  <a href="#files">08 File map</a>
+</nav>
+
+<div class="page" id="top">
+
+  <!-- ============ HEADER ============ -->
+  <header style="margin-bottom:56px">
+    <div class="eyebrow a" style="--i:0">
+      <span>Architecture overview</span><span class="sep">/</span>
+      <span>ai-job-search</span><span class="sep">/</span>
+      <span>v1.7.1 + unreleased</span><span class="sep">/</span>
+      <span>271 commits on master</span><span class="sep">/</span>
+      <span>snapshot 2026-09-13</span>
+    </div>
+    <h1 class="a" style="--i:1">A job search that runs as <em>prompts, not services.</em></h1>
+    <p class="lead a" style="--i:2">
+      This repo has no server, no database and no application code in the usual sense. It is a
+      <strong>Claude Code workspace</strong>: twelve slash-command workflows and a nine-file methodology skill
+      drive six small Bun CLIs that search job boards, a LaTeX toolchain that compiles tailored CVs and cover
+      letters, and a handful of Python tools that verify what came out.
+    </p>
+    <p class="lead-sub a" style="--i:3">
+      The candidate profile is the ground truth. Every workflow reads from it, and the drafting rules forbid
+      any claim it cannot support. State lives in plain files next to the code, all of them git-ignored.
+    </p>
+
+    <div class="kpis">
+      <div class="kpi kpi--hero as" style="--i:4">
+        <div class="n">12</div>
+        <div class="l">slash commands</div>
+        <div class="d">Markdown workflows under <code>.claude/commands/</code>. Three form the core loop; nine extend it once a profile exists.</div>
+      </div>
+      <div class="kpi as" style="--i:5">
+        <div class="n">6</div>
+        <div class="l">portal CLIs</div>
+        <div class="d">Bun + TypeScript, one folder per job board, same output contract.</div>
+      </div>
+      <div class="kpi as" style="--i:6">
+        <div class="n">9</div>
+        <div class="l">methodology files</div>
+        <div class="d">Profile, style, fit scoring, templates, interview prep. ~1,450 lines.</div>
+      </div>
+      <div class="kpi as" style="--i:7">
+        <div class="n">11</div>
+        <div class="l">python tools</div>
+        <div class="d">PDF verification, dedup keys, rank state, CI guards, salary lookup.</div>
+      </div>
+      <div class="kpi as" style="--i:8">
+        <div class="n">432</div>
+        <div class="l">unit tests</div>
+        <div class="d">33 files under <code>tests/</code>, run on Python 3.10 to 3.13 in CI.</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ 01 OVERVIEW ============ -->
+  <section id="overview">
+    <div class="section-head a" style="--i:9">
+      <div>
+        <span class="section-num">01 · System overview</span>
+        <h2>Who talks to <em>whom</em></h2>
+      </div>
+      <p>The model orchestrates everything. Commands pull rules from the skill, the skill is grounded in the profile,
+         and the only executables are the portal CLIs, LaTeX, and the Python verifiers.</p>
+    </div>
+
+    <div class="ve-card ve-card--hero a" style="--i:10; padding:0">
+      <div class="mermaid-wrap">
+        <div class="zoom-controls">
+          <button onclick="zoomDiagram(this, 1.2)" title="Zoom in">+</button>
+          <button onclick="zoomDiagram(this, 0.8)" title="Zoom out">&minus;</button>
+          <button onclick="resetZoom(this)" title="Reset zoom">&#8634;</button>
+        </div>
+        <pre class="mermaid">
+flowchart TD
+  PROF["<b>Candidate profile</b><br/><small>CLAUDE.md · 01-candidate-profile.md<br/>documents/</small>"]:::lSkill
+  SK["<b>Methodology skill</b><br/><small>job-application-assistant<br/>files 01 to 09</small>"]:::lSkill
+  U(["<b>You</b><br/><small>inside a Claude Code session</small>"]):::lUser
+  CMD["<b>Slash commands</b><br/><small>.claude/commands · 12 workflows</small>"]:::lCmd
+  PORT["<b>Portal search CLIs</b><br/><small>.agents/skills/*-search<br/>Bun + TypeScript</small>"]:::lPort
+  BOARDS(["<b>Job boards</b><br/><small>Jobindex · Jobnet · Jobbank<br/>Jobdanmark · LinkedIn · freehire</small>"]):::lExt
+  REV["<b>Reviewer agent</b><br/><small>fresh context · company research<br/>critiques the drafts</small>"]:::lRev
+  TEX["<b>Document toolchain</b><br/><small>lualatex CV · xelatex letter<br/>or /add-template engine</small>"]:::lTool
+  OUT["<b>Tailored PDFs</b><br/><small>cv/main_*.pdf<br/>cover_letters/cover_*.pdf</small>"]:::lOut
+  TOOLS["<b>Python verifiers</b><br/><small>verify_pdf · verify_layout<br/>pdftotext</small>"]:::lTool
+  STATE[("<b>Local state</b><br/><small>seen_jobs.json · tracker.csv<br/>documents/applications/</small>")]:::lState
+
+  PROF -->|"grounds"| SK
+  SK -->|"rules"| CMD
+  U --> CMD
+  CMD -->|"/scrape · /rank"| PORT
+  PORT -->|"search · detail"| BOARDS
+  CMD -->|"/apply spawns"| REV
+  REV -.->|"feedback"| CMD
+  CMD -->|"/apply drafts .tex"| TEX
+  TEX --> OUT
+  OUT -->|"pages · text layer"| TOOLS
+  TOOLS -.->|"fix, recompile"| TEX
+  CMD <-->|"read / write"| STATE
+
+  classDef lUser stroke-width:1.5px
+  classDef lCmd stroke-width:1.5px
+  classDef lSkill stroke-width:1.5px
+  classDef lPort stroke-width:1.5px
+  classDef lExt stroke-width:1.5px
+  classDef lRev stroke-width:1.5px
+  classDef lTool stroke-width:1.5px
+  classDef lOut stroke-width:1.5px
+  classDef lState stroke-width:1.5px
+        </pre>
+      </div>
+      <div class="legend" style="padding-bottom:18px">
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--navy-dim);border-color:var(--navy)"></span> prompts &amp; rules (markdown)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--moss-dim);border-color:var(--moss)"></span> portal CLIs (Bun)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--slate-dim);border-color:var(--slate)"></span> toolchain (LaTeX, Python)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--oxblood-dim);border-color:var(--oxblood)"></span> second agent</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--ink-dim);border-color:var(--ink)"></span> git-ignored state</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--gold-dim);border-color:var(--gold)"></span> you &amp; your output</div>
+      </div>
+    </div>
+
+    <blockquote class="pull a" style="--i:11">
+      "Do not duplicate these rules or specifications. Treat <code>.claude/</code> files as the single source of truth."
+      <small>AGENTS.md · thin-pointer design so Codex, Antigravity and Gemini CLI read the same spec</small>
+    </blockquote>
+  </section>
+
+  <!-- ============ 02 WORKFLOW ============ -->
+  <section id="workflow">
+    <div class="section-head a" style="--i:12">
+      <div>
+        <span class="section-num">02 · The application loop</span>
+        <h2>From profile to <em>signed contract</em></h2>
+      </div>
+      <p>Three commands form the core. The rest hang off specific stages. Each command is a markdown file with
+         numbered steps the model follows in order.</p>
+    </div>
+
+    <div class="ve-card a" style="--i:13">
+      <div class="pipeline pipeline--fit">
+        <div class="step step--gold is-core">
+          <div class="num">STAGE 1 · ONBOARD</div>
+          <div class="name"><span class="cmd">/setup</span>Build the profile</div>
+          <div class="detail">Reads <code>documents/</code>, a pasted CV, or interviews you. Writes CLAUDE.md and files 01, 02, 04, 05, 07.</div>
+          <div class="orbit"><span>/expand</span><span>/reset</span><span>/add-template</span><span>/add-portal</span></div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 20 20"><path d="M4 10h12M12 6l4 4-4 4"/></svg></div>
+        <div class="step step--moss is-core">
+          <div class="num">STAGE 2 · DISCOVER</div>
+          <div class="name"><span class="cmd">/scrape</span>Search the boards</div>
+          <div class="detail">Runs every enabled portal CLI in parallel, dedups by company+title key, quick-scores fit, stores in <code>seen_jobs.json</code>.</div>
+          <div class="orbit"><span>WebSearch fallback</span><span>portal health check</span></div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 20 20"><path d="M4 10h12M12 6l4 4-4 4"/></svg></div>
+        <div class="step step--moss">
+          <div class="num">STAGE 2b · TRIAGE</div>
+          <div class="name"><span class="cmd">/rank</span>Batch-score</div>
+          <div class="detail">Parallel agents fetch each posting and score five fit dimensions. Deal-breakers veto. Returns a ranked shortlist.</div>
+          <div class="orbit"><span>/upskill reads gaps</span></div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 20 20"><path d="M4 10h12M12 6l4 4-4 4"/></svg></div>
+        <div class="step step--navy is-core">
+          <div class="num">STAGE 3 · APPLY</div>
+          <div class="name"><span class="cmd">/apply</span>Draft, review, compile</div>
+          <div class="detail">Drafter-reviewer workflow with mandatory PDF compile and ATS text-layer check. Details in section 03.</div>
+          <div class="orbit"><span>salary_lookup.py</span><span>08-application-forms</span></div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 20 20"><path d="M4 10h12M12 6l4 4-4 4"/></svg></div>
+        <div class="step step--ink">
+          <div class="num">STAGE 4 · TRACK</div>
+          <div class="name"><span class="cmd">/outcome</span>Record what happened</div>
+          <div class="detail">Archives CV, letter and posting to <code>documents/applications/</code>. Follow-up drafts after 10 quiet days.</div>
+          <div class="orbit"><span>/gmail-sync</span><span>/html-report</span><span>/notion-sync</span></div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 20 20"><path d="M4 10h12M12 6l4 4-4 4"/></svg></div>
+        <div class="step step--ox">
+          <div class="num">STAGE 5 · INTERVIEW</div>
+          <div class="name"><span class="cmd">/interview</span>Prep pack</div>
+          <div class="detail">Stage-specific prep from the archived application, company research, STAR mapping, and an optional mock interview.</div>
+          <div class="orbit"><span>07-interview-prep</span></div>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:14px">
+        <strong>The loop closes.</strong> Once a few applications resolve, <code>/outcome</code> points back to
+        <code>/setup</code> to recalibrate the fit framework from what actually got interviews.
+        <code>/setup --section search</code> re-tunes the queries in <code>search-queries.md</code> without a full re-onboard.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 INSIDE /apply ============ -->
+  <section id="apply">
+    <div class="section-head a" style="--i:14">
+      <div>
+        <span class="section-num">03 · Inside /apply</span>
+        <h2>Drafter, reviewer, <em>compiler</em></h2>
+      </div>
+      <p>The one command that produces documents. Two agents with separate contexts, one hard gate: the PDFs must
+         compile, fit the page budget, and read cleanly to an ATS parser.</p>
+    </div>
+
+    <div class="ve-card a" style="--i:15">
+      <div class="legend" style="border-top:none;padding:0 0 14px;margin:0">
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--navy-dim);border-color:var(--navy)"></span> drafter (main agent)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--oxblood-dim);border-color:var(--oxblood)"></span> reviewer (spawned agent)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--slate-dim);border-color:var(--slate)"></span> toolchain gate</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--ink-dim);border-color:var(--ink)"></span> state write</div>
+      </div>
+      <div class="pipeline pipeline--wrap">
+        <div class="step step--navy">
+          <div class="num">STEP 0</div>
+          <div class="name">Parse input</div>
+          <div class="detail">URL or pasted text. Posting is <b>untrusted</b>: no embedded instructions followed, no links fetched from its body.</div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 20 20"><path d="M4 10h12M12 6l4 4-4 4"/></svg></div>
+        <div class="step step--navy">
+          <div class="num">STEP 1</div>
+          <div class="name">Evaluate fit</div>
+          <div class="detail">Language Gate, then five dimensions from <code>04-job-evaluation.md</code>. Presents verdict, asks to proceed.</div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 20 20"><path d="M4 10h12M12 6l4 4-4 4"/></svg></div>
+        <div class="step step--navy">
+          <div class="num">STEP 2</div>
+          <div class="name">Draft</div>
+          <div class="detail"><code>cv/main_&lt;co&gt;_&lt;role&gt;.tex</code> and the cover letter, from templates in 05 and 06, style rules in 03.</div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 20 20"><path d="M4 10h12M12 6l4 4-4 4"/></svg></div>
+        <div class="step step--ox">
+          <div class="num">STEP 3</div>
+          <div class="name">Review</div>
+          <div class="detail">Reviewer researches the company (verify-before-use), runs a Factual Grounding Audit against three sources, returns critique.</div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 20 20"><path d="M4 10h12M12 6l4 4-4 4"/></svg></div>
+        <div class="step step--navy">
+          <div class="num">STEP 4</div>
+          <div class="name">Revise</div>
+          <div class="detail">Drafter applies feedback. New facts the user confirms are written back to <code>01-candidate-profile.md</code> in the same turn.</div>
+        </div>
+        <div class="arrow loop"><svg viewBox="0 0 20 20"><path d="M4 10h12M12 6l4 4-4 4"/></svg><span>iterate</span></div>
+        <div class="step step--slate">
+          <div class="num">STEP 5</div>
+          <div class="name">Compile &amp; inspect</div>
+          <div class="detail">lualatex CV, xelatex letter. Read the PDF. CV exactly 2 pages, letter exactly 1, no orphaned titles. <code>verify_layout.py</code> measures it.</div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 20 20"><path d="M4 10h12M12 6l4 4-4 4"/></svg></div>
+        <div class="step step--slate">
+          <div class="num">STEP 5d</div>
+          <div class="name">ATS check</div>
+          <div class="detail"><code>verify_pdf.py --dump-text</code>: literal email and phone, no glyph garbage, sane reading order, keyword coverage without stuffing.</div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 20 20"><path d="M4 10h12M12 6l4 4-4 4"/></svg></div>
+        <div class="step step--ink">
+          <div class="num">STEP 6</div>
+          <div class="name">Present &amp; record</div>
+          <div class="detail">Verification checklist, key tailoring decisions, tracker row, optional application-form field sheet.</div>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:14px">
+        <div class="callout">
+          <strong>Relevance-weighted cutting.</strong> When the CV overflows two pages, each line is scored on relevance
+          to the posting, uniqueness, and whether the cover letter depends on it. The lowest total goes first, not the oldest.
+        </div>
+        <div class="callout callout--ox">
+          <strong>Nothing invented.</strong> The grounding audit strips any claim absent from CLAUDE.md, the profile file
+          and the master CV. That is why confirmed facts must reach the profile immediately or they vanish from every later draft.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 LAYERS ============ -->
+  <section id="layers">
+    <div class="section-head a" style="--i:16">
+      <div>
+        <span class="section-num">04 · Layers</span>
+        <h2>What lives <em>where</em></h2>
+      </div>
+      <p>Four kinds of artifact, four directories. Markdown carries behaviour; TypeScript and Python carry the few things
+         that must be deterministic.</p>
+    </div>
+
+    <div class="grid-2">
+      <div class="ve-card c-navy a" style="--i:17">
+        <div class="ve-label"><span class="dot"></span> Commands <span class="path">.claude/commands/</span></div>
+        <ul class="list">
+          <li><span class="cmd">/setup</span> <span class="cmd">/scrape</span> <span class="cmd">/apply</span> <span class="badge badge--gold">core loop</span><small>Onboard, discover, produce. <code>/scrape</code> is defined in the job-scraper skill rather than a command file.</small></li>
+          <li><span class="cmd">/rank</span> <span class="cmd">/outcome</span> <span class="cmd">/interview</span><small>Triage the scrape, record results, prep for a stage. All three read and write the tracker and archive.</small></li>
+          <li><span class="cmd">/expand</span> <span class="cmd">/upskill</span><small>Enrich the profile from linked public sources. Gap heatmap and learning plan from tracked and ranked postings.</small></li>
+          <li><span class="cmd">/gmail-sync</span> <span class="cmd">/notion-sync</span> <span class="cmd">/html-report</span> <span class="badge">integrations</span><small>Gmail status signals proposed as a batch. One-way Notion view. Offline HTML dashboard with inline SVG charts.</small></li>
+          <li><span class="cmd">/add-portal</span> <span class="cmd">/add-template</span> <span class="cmd">/reset</span> <span class="badge">framework</span><small>Generate a portal skill, register a document engine, wipe personal data with typed confirmation.</small></li>
+        </ul>
+      </div>
+
+      <div class="ve-card c-navy a" style="--i:18">
+        <div class="ve-label"><span class="dot"></span> Methodology skill <span class="path">.claude/skills/job-application-assistant/</span></div>
+        <ul class="list tight">
+          <li><code>SKILL.md</code> <small>Entry point, allowed tools, <code>framework_version</code> guarded by CI.</small></li>
+          <li><code>01-candidate-profile.md</code> <small>Structured CV data. One of three grounding sources.</small></li>
+          <li><code>02-behavioral-profile.md</code> <small>PI, DISC or self-assessment.</small></li>
+          <li><code>03-writing-style.md</code> <small>Tone, structure, banned cliches and em-dashes.</small></li>
+          <li><code>04-job-evaluation.md</code> <small>Five-dimension fit scoring, Language Gate, deal-breakers.</small></li>
+          <li><code>05-cv-templates.md</code> <small>moderncv structure, tailoring and cutting rules, ACTIVE-TEMPLATE block.</small></li>
+          <li><code>06-cover-letter-templates.md</code> <small>cover.cls structure and one-page rule.</small></li>
+          <li><code>07-interview-prep.md</code> <small>STAR examples, roleplay protocol.</small></li>
+          <li><code>08-application-forms.md</code> <small>Field-sheet for portal forms.</small></li>
+          <li><code>09-web-research.md</code> <small>Fetch escalation, 403 handling, robots.txt gate.</small></li>
+        </ul>
+        <div class="callout" style="margin-top:12px;font-size:12.5px">Two sibling skills: <code>job-scraper/</code> (the <code>/scrape</code> steps plus <code>search-queries.md</code>) and <code>upskill/</code>.</div>
+      </div>
+
+      <div class="ve-card c-moss a" style="--i:19">
+        <div class="ve-label"><span class="dot"></span> Portal search CLIs <span class="path">.agents/skills/*-search/</span></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Skill</th><th>Market</th><th>Runtime deps</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td><b>jobindex-search</b><small>HTML scrape, 20 per page</small></td><td>Denmark</td><td>bunli, node-html-parser, zod</td><td><span class="status st-opt">opt-in</span></td></tr>
+              <tr><td><b>jobnet-search</b><small>government portal</small></td><td>Denmark</td><td>bunli, zod</td><td><span class="status st-opt">opt-in</span></td></tr>
+              <tr><td><b>jobbank-search</b><small>Akademikernes Jobbank</small></td><td>Denmark</td><td>bunli, zod</td><td><span class="status st-opt">opt-in</span></td></tr>
+              <tr><td><b>jobdanmark-search</b></td><td>Denmark</td><td>bunli, zod</td><td><span class="status st-opt">opt-in</span></td></tr>
+              <tr><td><b>linkedin-search</b><small>public jobs-guest endpoints, personal use</small></td><td>Any, via <code>-l</code></td><td>none</td><td><span class="status st-on">enabled</span></td></tr>
+              <tr><td><b>freehire-search</b><small>REST API, structured results</small></td><td>Multi, tech</td><td>none</td><td><span class="status st-on">enabled</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout" style="margin-top:12px;font-size:12.5px">
+          <strong>One contract.</strong> Every skill ships <code>cli/src/cli.ts</code> with <code>search</code> and <code>detail</code>
+          commands, <code>--format json|table|plain</code>, an <code>enabled:</code> flag in its SKILL.md, and offline tests.
+          <code>/scrape</code> auto-discovers anything that follows it.
+        </div>
+      </div>
+
+      <div class="ve-card c-slate a" style="--i:20">
+        <div class="ve-label"><span class="dot"></span> Python tools <span class="path">tools/ · salary_lookup.py</span></div>
+        <ul class="list tight">
+          <li><code>verify_pdf.py</code> <span class="badge badge--slate">runtime</span><small>Page count and text layer via pypdf, then pdftotext fallback.</small></li>
+          <li><code>verify_layout.py</code> <span class="badge badge--slate">runtime</span><small>Measures holes, orphaned entry titles, footer collisions.</small></li>
+          <li><code>job_key.py</code> <span class="badge badge--slate">runtime</span><small>Canonical company+title dedup key for <code>seen_jobs.json</code>.</small></li>
+          <li><code>rank_state.py</code> <span class="badge badge--slate">runtime</span><small>Selects candidates and writes scores back without round-tripping the whole file through the model.</small></li>
+          <li><code>robots_check.py</code> <span class="badge badge--slate">runtime</span><small>Gates the browser-header retry on robots.txt.</small></li>
+          <li><code>salary_lookup.py</code> + <code>convert_salary_excel.py</code> <small>Bring-your-own salary data benchmark.</small></li>
+          <li><code>lint_skills.py</code> · <code>security_guards.py</code> · <code>check_framework_version.py</code> <span class="badge">CI</span><small>Frontmatter, allowlist, gitignore and manifest guards.</small></li>
+          <li><code>check_upstream_updates.py</code> · <code>upstream_triage.py</code> <span class="badge">fork upkeep</span><small>Preview which personalised files an upstream update touches. Weekly triage report.</small></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 DATA ============ -->
+  <section id="data">
+    <div class="section-head a" style="--i:21">
+      <div>
+        <span class="section-num">05 · Data &amp; state</span>
+        <h2>Tracked framework, <em>ignored life</em></h2>
+      </div>
+      <p>The repo separates what is safe to commit from what is yours. <code>security_guards.py</code> fails CI if the
+         gitignore rules drift.</p>
+    </div>
+
+    <div class="split">
+      <div class="ve-card c-gold a" style="--i:22">
+        <div class="ve-label"><span class="dot"></span> Tracked · committed with placeholders</div>
+        <div class="file-row"><code>CLAUDE.md</code><span>Profile template with <code>[YOUR_NAME]</code> tokens. Placeholder-integrity CI job protects upstream.</span></div>
+        <div class="file-row"><code>cv/main_example.tex</code><span>moderncv banking style. CI smoke-compiles it with lualatex on two TeX Live legs.</span></div>
+        <div class="file-row"><code>cover_letters/cover.cls</code><span>Custom class, Lato and Raleway fonts bundled under <code>OpenFonts/</code>. xelatex.</span></div>
+        <div class="file-row"><code>templates/</code><span>Custom engines registered by <code>/add-template</code>, stored with placeholder tokens.</span></div>
+        <div class="file-row"><code>.claude/settings.json</code><span>Permission allowlist: the six CLIs, five Python tools, <code>pdftotext</code>. Nothing else pre-approved.</span></div>
+      </div>
+      <div class="ve-card c-ink ve-card--recessed a" style="--i:23">
+        <div class="ve-label"><span class="dot"></span> Git-ignored · personal state</div>
+        <div class="file-row"><code>documents/</code><span>Inputs: master CV, LinkedIn export, diplomas, references, past postings. Read by <code>/setup</code> Path A and <code>/expand</code>.</span></div>
+        <div class="file-row"><code>job_scraper/seen_jobs.json</code><span>Every posting ever seen, keyed by <code>job_key.py</code>, with <code>/rank</code> scores and recorded gaps.</span></div>
+        <div class="file-row"><code>job_search_tracker.csv</code><span>One row per application. Source for <code>/html-report</code>, <code>/notion-sync</code>, <code>/gmail-sync</code>.</span></div>
+        <div class="file-row"><code>documents/applications/&lt;co&gt;_&lt;role&gt;/</code><span>Submitted CV, letter, verbatim posting, <code>outcome.md</code>. What <code>/interview</code> preps from.</span></div>
+        <div class="file-row"><code>company_research/*.json</code><span>Research cache shared between the reviewer and <code>/interview</code>.</span></div>
+        <div class="file-row"><code>gmail_sync/ · upskill/*.md · *.pdf</code><span>Processed message IDs, gap reports, every compiled document.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 GUARDRAILS ============ -->
+  <section id="guardrails">
+    <div class="section-head a" style="--i:24">
+      <div>
+        <span class="section-num">06 · Guardrails</span>
+        <h2>What CI and the prompts <em>refuse</em></h2>
+      </div>
+      <p>Defences are instruction-level, not a sandbox. CI checks the framework; the prompts check the inputs;
+         you check the code you copy in.</p>
+    </div>
+
+    <div class="grid-2">
+      <div class="ve-card c-slate a" style="--i:25">
+        <div class="ve-label"><span class="dot"></span> CI <span class="path">.github/workflows/ci.yml</span></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Job</th><th>Checks</th></tr></thead>
+            <tbody>
+              <tr><td><b>lint</b></td><td>Skill and command frontmatter, settings.json shape, <code>framework_version</code> bumped when a skill file changes.</td></tr>
+              <tr><td><b>security-guards</b></td><td>Permission allowlist unchanged, gitignore rules intact, portal manifests have no <code>dependencies</code> drift or lifecycle scripts.</td></tr>
+              <tr><td><b>python-tests</b></td><td>432 unittest cases, Python 3.10 to 3.13 matrix.</td></tr>
+              <tr><td><b>dependency-review</b></td><td>GitHub dependency review when the graph is available.</td></tr>
+              <tr><td><b>latex-smoke</b></td><td>Compile both examples on texlive-latest and debian-bookworm, verify extractable text and stock page structure.</td></tr>
+              <tr><td><b>discover-clis → cli-checks</b></td><td>Finds every <code>*-search/cli</code>, then <code>bun install</code>, typecheck, and fixture tests per tool.</td></tr>
+              <tr><td><b>placeholder-integrity</b></td><td>Tracked template files keep their <code>[PLACEHOLDER]</code> tokens. Upstream only.</td></tr>
+              <tr><td><b>upstream-watch</b> <span class="badge">weekly</span></td><td>Monday 08:00 UTC: <code>upstream_triage.py</code> posts a worth-reviewing vs probably-skip report to a rolling issue.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="ve-card c-ox a" style="--i:26">
+        <div class="ve-label"><span class="dot"></span> Trust boundaries in the prompts</div>
+        <ul class="list">
+          <li><b>Postings are untrusted input.</b><small>No instruction embedded in a job ad is followed. No link found inside posting text is fetched. Company claims are verified only against independently located sources.</small></li>
+          <li><b>Reviewer research is not trusted either.</b><small>The verification checklist re-verifies every company-specific claim via WebFetch or WebSearch before it reaches a document.</small></li>
+          <li><b>robots.txt gates retries.</b><small>The browser-header curl retry in <code>09-web-research.md</code> only runs when <code>robots_check.py</code> says the site permits it. Never to override a refusal.</small></li>
+          <li><b>Manual portal install, on purpose.</b><small>Portal skills run pre-approved against your career data, so borrowing one from another fork is a copy-and-read-the-code step. There is deliberately no installer.</small></li>
+          <li><b>Reset needs a typed word.</b><small><code>/reset</code> lists what it will delete and requires <code>RESET</code> before touching anything.</small></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 EXTENSION POINTS ============ -->
+  <section id="extend">
+    <div class="section-head a" style="--i:27">
+      <div>
+        <span class="section-num">07 · Extension points</span>
+        <h2>Three seams, <em>no upstream changes</em></h2>
+      </div>
+      <p>Market-specific things belong in forks. The framework exposes exactly three places to plug them in.</p>
+    </div>
+    <div class="grid-3">
+      <div class="ve-card c-moss a" style="--i:28">
+        <div class="ve-label"><span class="dot"></span> Portal skills</div>
+        <p style="font-size:13.5px;color:var(--text-dim);line-height:1.55">
+          <span class="cmd">/add-portal</span> investigates a job board (search URL pattern, result structure, access rules),
+          scaffolds a CLI with the shared contract, test-runs a live query, and registers it. Auth-walled boards are declined.
+          Community-built portals are catalogued in discussion #78.
+        </p>
+      </div>
+      <div class="ve-card c-slate a" style="--i:29">
+        <div class="ve-label"><span class="dot"></span> Document templates</div>
+        <p style="font-size:13.5px;color:var(--text-dim);line-height:1.55">
+          <span class="cmd">/add-template</span> registers any toolchain that compiles to PDF from the command line: LaTeX,
+          Typst, or other. It captures the compile command, fonts, style rules and page limit, runs a mandatory test compile,
+          and writes an <code>ACTIVE-TEMPLATE</code> block that <code>/apply</code> honours.
+        </p>
+      </div>
+      <div class="ve-card c-gold a" style="--i:30">
+        <div class="ve-label"><span class="dot"></span> Evaluation criteria</div>
+        <p style="font-size:13.5px;color:var(--text-dim);line-height:1.55">
+          Deal-breakers and preferences are free-form lines in the profile. "No on-call" or "minimum salary X" carries
+          real weight in <code>/rank</code> and <code>/apply</code> with no code. Language is the one structured gate: an
+          undeclared required language hard-rejects, a lower declared level only flags.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 FILE MAP ============ -->
+  <section id="files">
+    <div class="section-head a" style="--i:31">
+      <div>
+        <span class="section-num">08 · File map</span>
+        <h2>Reference</h2>
+      </div>
+    </div>
+    <details class="a" style="--i:32">
+      <summary>Top-level directories and what each one holds</summary>
+      <div class="inner">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Path</th><th>Kind</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td><code>CLAUDE.md</code></td><td>profile + rules</td><td>Candidate profile, workflow, verification checklist. Loaded every session.</td></tr>
+              <tr><td><code>AGENTS.md</code></td><td>pointer</td><td>Tells non-Claude agents to read <code>.claude/</code> as the single spec.</td></tr>
+              <tr><td><code>.claude/commands/</code></td><td>12 markdown</td><td>Slash-command workflows.</td></tr>
+              <tr><td><code>.claude/skills/</code></td><td>3 skills</td><td>job-application-assistant, job-scraper, upskill.</td></tr>
+              <tr><td><code>.claude/agents/</code></td><td>1 agent</td><td>gemini-research-expert, a research sub-agent definition.</td></tr>
+              <tr><td><code>.claude/settings.json</code></td><td>permissions</td><td>Scoped allowlist for CLIs and Python tools.</td></tr>
+              <tr><td><code>.agents/skills/</code></td><td>6 Bun CLIs</td><td>Portal search skills in portable Agent Skills format.</td></tr>
+              <tr><td><code>cv/</code> · <code>cover_letters/</code></td><td>LaTeX</td><td>Stock templates plus generated <code>main_&lt;co&gt;_&lt;role&gt;.tex</code> variants.</td></tr>
+              <tr><td><code>templates/</code></td><td>custom engines</td><td>Registered via <code>/add-template</code>.</td></tr>
+              <tr><td><code>documents/</code></td><td>personal inputs + archive</td><td>cv, linkedin, diplomas, references, postings, applications.</td></tr>
+              <tr><td><code>tools/</code></td><td>10 Python</td><td>Verifiers, state helpers, CI guards, fork upkeep.</td></tr>
+              <tr><td><code>tests/</code></td><td>33 files</td><td>unittest suite for every tool and command contract.</td></tr>
+              <tr><td><code>job_scraper/</code> · <code>company_research/</code> · <code>gmail_sync/</code> · <code>upskill/</code></td><td>state</td><td>Git-ignored runtime state per workflow.</td></tr>
+              <tr><td><code>.github/workflows/</code></td><td>2 workflows</td><td><code>ci.yml</code> on push and PR, <code>upstream-watch.yml</code> weekly.</td></tr>
+              <tr><td><code>SETUP.md</code> · <code>SECURITY.md</code> · <code>CONTRIBUTING.md</code> · <code>CHANGELOG.md</code></td><td>docs</td><td>Install guide, threat model, what gets merged vs lives in forks, release notes.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+  </section>
+
+</div>
+
+<script>
+  // Zoom model: the SVG keeps its natural (viewBox) size and is scaled with a
+  // top-left transform; the .mermaid box is resized to the scaled footprint so
+  // the wrapper's overflow scrolling and centering both stay correct.
+  function setZoom(wrap, next) {
+    var target = wrap.querySelector('.mermaid');
+    var svg = target.querySelector('svg');
+    if (!svg) return;
+    var W = parseFloat(target.dataset.w), H = parseFloat(target.dataset.h);
+    next = Math.min(Math.max(next, 0.3), 5);
+    target.dataset.zoom = next;
+    svg.style.transform = 'scale(' + next + ')';
+    target.style.width = (W * next) + 'px';
+    target.style.height = (H * next) + 'px';
+    wrap.classList.toggle('is-zoomed', W * next > wrap.clientWidth - 40);
+  }
+  function zoomDiagram(btn, factor) {
+    var wrap = btn.closest('.mermaid-wrap');
+    var cur = parseFloat(wrap.querySelector('.mermaid').dataset.zoom || '1');
+    setZoom(wrap, cur * factor);
+  }
+  function resetZoom(btn) {
+    var wrap = btn.closest('.mermaid-wrap');
+    setZoom(wrap, parseFloat(wrap.querySelector('.mermaid').dataset.fit || '1'));
+  }
+
+  document.querySelectorAll('.mermaid-wrap').forEach(function (wrap) {
+    wrap.addEventListener('wheel', function (e) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      var cur = parseFloat(wrap.querySelector('.mermaid').dataset.zoom || '1');
+      setZoom(wrap, cur * (e.deltaY < 0 ? 1.1 : 0.9));
+    }, { passive: false });
+
+    var sx, sy, sl, st;
+    wrap.addEventListener('mousedown', function (e) {
+      if (e.target.closest('.zoom-controls')) return;
+      if (parseFloat(wrap.querySelector('.mermaid').dataset.zoom || '1') <= 1) return;
+      wrap.classList.add('is-panning');
+      sx = e.clientX; sy = e.clientY; sl = wrap.scrollLeft; st = wrap.scrollTop;
+    });
+    window.addEventListener('mousemove', function (e) {
+      if (!wrap.classList.contains('is-panning')) return;
+      wrap.scrollLeft = sl - (e.clientX - sx);
+      wrap.scrollTop = st - (e.clientY - sy);
+    });
+    window.addEventListener('mouseup', function () { wrap.classList.remove('is-panning'); });
+  });
+</script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk/dist/mermaid-layout-elk.esm.min.mjs';
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.registerLayoutLoaders(elkLayouts);
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    look: 'classic',
+    layout: 'elk',
+    flowchart: { htmlLabels: true, curve: 'basis', nodeSpacing: 36, rankSpacing: 52 },
+    themeVariables: {
+      primaryColor: isDark ? '#1f2530' : '#fffdf9',
+      primaryBorderColor: isDark ? '#8fb3e0' : '#1e3a5f',
+      primaryTextColor: isDark ? '#e8e2d6' : '#1b2432',
+      lineColor: isDark ? '#7c8697' : '#8a93a3',
+      edgeLabelBackground: isDark ? '#181d26' : '#fffdf9',
+      fontSize: '15px',
+      fontFamily: "'DM Sans', 'Avenir Next', sans-serif",
+    }
+  });
+  await mermaid.run({ querySelector: '.mermaid' });
+
+  // Fit the diagram to the card on first render (never above 1.2x), remember
+  // that as the "reset" zoom, then hand over to the zoom controls.
+  document.querySelectorAll('.mermaid-wrap').forEach(function (wrap) {
+    const m = wrap.querySelector('.mermaid');
+    const svg = m.querySelector('svg');
+    if (!svg) return;
+    const vb = svg.viewBox.baseVal;
+    const W = vb && vb.width ? vb.width : svg.getBoundingClientRect().width;
+    const H = vb && vb.height ? vb.height : svg.getBoundingClientRect().height;
+    svg.style.maxWidth = 'none';
+    svg.style.width = W + 'px';
+    svg.style.height = H + 'px';
+    m.dataset.w = W; m.dataset.h = H;
+    const fit = Math.min(1.2, (wrap.clientWidth - 40) / W);
+    m.dataset.fit = fit;
+    setZoom(wrap, fit);
+  });
+</script>
+
+</body>
+</html>
