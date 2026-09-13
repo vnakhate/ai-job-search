@@ -6,7 +6,8 @@
 - `UAT_BROWSER_CHANNEL=chrome npm run test:uat`: **18 UAT executions passed** (nine scenarios in desktop and iPhone-sized Chromium projects) in about 50 seconds.
 - UAT started its own Worker on port 8798 with temporary state and shut it down afterwards; the interactive demo account on port 8797 was not used.
 - A new billing regression test exposed an unrelated subscription item extending an expired JobPilot entitlement. The calculation now considers only the configured price when deriving item-level expiry; the regression passes.
-- CI now runs UAT and uploads HTML reports, screenshots and failure traces. The workflow has been configured locally; no remote CI run is claimed.
+- GitHub CI passed on branch `codex/jobpilot-cloudflare` at implementation commit `ef898be`: [JobPilot platform run 34763864355](https://github.com/vnakhate/ai-job-search/actions/runs/34763864355). This includes unit/contract tests, type checking, build, Worker deployment dry run and desktop/mobile UAT. Reports are uploaded as workflow artifacts.
+- Cloudflare deployment remains pending: the existing OAuth token has Pages permissions but lacks Workers/AI deployment access, and the attempted authorization refresh timed out. Auth0 and Stripe settings also remain unconfigured. No public Worker was deployed.
 - See [the UAT matrix](uat.md) for commands and the still-pending live-service/native acceptance cases.
 
 ## Initial platform verification baseline
