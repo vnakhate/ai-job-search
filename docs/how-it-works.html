@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Job Search, explained</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============ THEME: editorial, forest + cream + gold ============ */
+  :root {
+    --font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+    --font-body: 'DM Sans', 'Avenir Next', 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+    --bg: #f6f3ec;
+    --surface: #fffdf8;
+    --surface2: #efeadf;
+    --surface-hero: #132c28;
+    --surface-hero-text: #eef2e9;
+    --border: rgba(20, 40, 35, 0.09);
+    --border-bright: rgba(20, 40, 35, 0.18);
+    --text: #16302b;
+    --text-dim: #66736d;
+
+    --forest: #1d4a3f;
+    --forest-dim: rgba(29, 74, 63, 0.08);
+    --gold: #a67c00;
+    --gold-dim: rgba(166, 124, 0, 0.10);
+    --sage: #4f7a2f;
+    --sage-dim: rgba(79, 122, 47, 0.10);
+    --rose: #9f1239;
+    --rose-dim: rgba(159, 18, 57, 0.09);
+    --amber: #b45309;
+    --amber-dim: rgba(180, 83, 9, 0.10);
+    --teal: #0f766e;
+    --teal-dim: rgba(15, 118, 110, 0.09);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1b18;
+      --surface: #15241f;
+      --surface2: #1c2f28;
+      --surface-hero: #0b1614;
+      --surface-hero-text: #e6ecdf;
+      --border: rgba(255, 255, 255, 0.07);
+      --border-bright: rgba(255, 255, 255, 0.15);
+      --text: #e8e4d7;
+      --text-dim: #98a69f;
+      --forest: #8fcbb6;
+      --forest-dim: rgba(143, 203, 182, 0.12);
+      --gold: #e2bb4f;
+      --gold-dim: rgba(226, 187, 79, 0.12);
+      --sage: #a9c96f;
+      --sage-dim: rgba(169, 201, 111, 0.12);
+      --rose: #f5a4b3;
+      --rose-dim: rgba(245, 164, 179, 0.12);
+      --amber: #f2b45a;
+      --amber-dim: rgba(242, 180, 90, 0.12);
+      --teal: #6ad3c7;
+      --teal-dim: rgba(106, 211, 199, 0.12);
+    }
+  }
+
+  /* ============ RESET + BASE ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse at 12% -5%, var(--gold-dim) 0%, transparent 45%),
+      radial-gradient(ellipse at 95% 30%, var(--forest-dim) 0%, transparent 40%);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  a { color: var(--forest); }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--forest-dim);
+    color: var(--forest);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 32px; }
+  section { padding: 56px 0 8px; }
+  section > .wrap > * { min-width: 0; }
+
+  /* ============ ANIMATION ============ */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+  .a { animation: fadeUp 0.5s ease-out both; animation-delay: calc(var(--i, 0) * 0.07s); }
+  .a-scale { animation: fadeScale 0.5s ease-out both; animation-delay: calc(var(--i, 0) * 0.07s); }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* ============ NAV ============ */
+  .topnav {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topnav .wrap { display: flex; align-items: center; gap: 24px; height: 52px; }
+  .topnav .brand { font-family: var(--font-display); font-size: 21px; letter-spacing: -0.2px; white-space: nowrap; }
+  .topnav .brand span { color: var(--gold); }
+  .topnav nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  .topnav nav::-webkit-scrollbar { display: none; }
+  .topnav nav a {
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.4px; text-transform: uppercase;
+    color: var(--text-dim); text-decoration: none; padding: 6px 10px; border-radius: 6px; white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+  }
+  .topnav nav a:hover { background: var(--forest-dim); color: var(--forest); }
+
+  /* ============ TYPOGRAPHY ============ */
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--gold); display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  }
+  .eyebrow::before { content: ''; width: 22px; height: 1px; background: var(--gold); }
+  h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(44px, 6.4vw, 78px); line-height: 1.0; letter-spacing: -1.2px; text-wrap: balance; }
+  h1 em { font-style: italic; color: var(--gold); }
+  h2 { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 3.6vw, 42px); line-height: 1.08; letter-spacing: -0.6px; margin-bottom: 10px; text-wrap: balance; }
+  h3 { font-size: 16px; font-weight: 600; letter-spacing: -0.1px; }
+  .lead { font-size: 18px; line-height: 1.6; color: var(--text-dim); max-width: 62ch; }
+  .lead strong { color: var(--text); font-weight: 600; }
+  .section-intro { color: var(--text-dim); max-width: 66ch; margin-bottom: 26px; }
+
+  /* ============ HERO ============ */
+  .hero { padding: 72px 0 40px; }
+  .hero-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 48px; align-items: end; }
+  .hero-grid > * { min-width: 0; }
+  .hero .lead { margin-top: 22px; }
+  .kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 18px 14px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+  }
+  .kpi--hero { background: var(--surface-hero); color: var(--surface-hero-text); border-color: transparent; box-shadow: 0 14px 34px rgba(19,44,40,0.22); }
+  .kpi strong { font-family: var(--font-display); font-size: 44px; line-height: 1; display: block; letter-spacing: -1px; font-weight: 400; }
+  .kpi--hero strong { color: #e2bb4f; }
+  .kpi span { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); display: block; margin-top: 8px; }
+  .kpi--hero span { color: rgba(238,242,233,0.7); }
+
+  /* ============ CARDS ============ */
+  .ve-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; min-width: 0; }
+  .ve-card--recessed { background: var(--surface2); box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
+  .ve-card--elevated { box-shadow: 0 8px 28px rgba(19,44,40,0.08); }
+  .ve-card p { color: var(--text-dim); font-size: 14px; }
+  .ve-card h3 { margin-bottom: 6px; }
+  .ve-label { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .ve-label .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: currentColor; }
+  .ve-label--forest { color: var(--forest); } .ve-label--gold { color: var(--gold); } .ve-label--sage { color: var(--sage); }
+  .ve-label--rose { color: var(--rose); } .ve-label--amber { color: var(--amber); } .ve-label--teal { color: var(--teal); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-2 > *, .grid-3 > * { min-width: 0; }
+
+  /* Pages grid */
+  .page-card { position: relative; overflow: hidden; }
+  .page-card .num { font-family: var(--font-display); font-size: 64px; line-height: 1; color: var(--gold); opacity: 0.35; position: absolute; right: 18px; top: 6px; }
+  .page-card ul { list-style: none; margin-top: 12px; font-size: 13.5px; color: var(--text-dim); }
+  .page-card li { position: relative; padding-left: 16px; margin: 4px 0; }
+  .page-card li::before { content: '›'; position: absolute; left: 0; color: var(--gold); font-weight: 700; }
+  .page-card li strong { color: var(--text); font-weight: 600; }
+
+  /* ============ MERMAID ============ */
+  .mermaid-wrap { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px 22px 22px; overflow: auto; margin-bottom: 18px; scrollbar-width: thin; scrollbar-color: var(--border-bright) transparent; }
+  .mermaid-wrap .mermaid { width: 100%; display: flex; justify-content: center; transition: transform 0.2s ease; transform-origin: top center; }
+  .mermaid-wrap .mermaid svg { width: 100% !important; height: auto !important; max-width: none !important; display: block; }
+  .mermaid-wrap.is-zoomed { cursor: grab; } .mermaid-wrap.is-panning { cursor: grabbing; user-select: none; }
+  .zoom-controls { position: absolute; top: 10px; right: 10px; display: flex; gap: 2px; z-index: 10; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+  .zoom-controls button { width: 28px; height: 28px; border: none; background: transparent; color: var(--text-dim); font-family: var(--font-mono); font-size: 14px; cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
+  .zoom-controls button:hover { background: var(--forest-dim); color: var(--forest); }
+  .mermaid .nodeLabel { font-family: var(--font-body) !important; font-size: 15px !important; line-height: 1.35; }
+  .mermaid .nodeLabel small { display: block; font-size: 12px; color: var(--text-dim); font-weight: 400; margin-top: 2px; }
+  .mermaid .edgeLabel { font-family: var(--font-mono) !important; font-size: 11.5px !important; }
+  .mermaid .cluster-label .nodeLabel { font-family: var(--font-mono) !important; font-size: 11px !important; letter-spacing: 1px; text-transform: uppercase; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border-bright); }
+
+  /* ============ MATCH CARD ANATOMY ============ */
+  .anatomy { display: grid; grid-template-columns: 1.15fr 1fr; gap: 24px; align-items: start; }
+  .anatomy > * { min-width: 0; }
+  .mock { background: var(--surface); border: 1px solid var(--border-bright); border-radius: 16px; padding: 22px 24px; box-shadow: 0 10px 30px rgba(19,44,40,0.10); font-size: 14px; }
+  .mock .row { display: flex; align-items: flex-start; gap: 12px; }
+  .mock .mark { width: 40px; height: 40px; border-radius: 10px; background: var(--surface2); font-family: var(--font-display); font-size: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .mock .title h4 { font-size: 16px; font-weight: 600; }
+  .mock .title p { color: var(--text-dim); font-size: 13px; }
+  .mock .score { margin-left: auto; text-align: right; font-family: var(--font-display); font-size: 34px; line-height: 1; color: var(--sage); }
+  .mock .score small { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+  .mock .reason { margin: 14px 0 10px; }
+  .mock .tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mock .tag { font-family: var(--font-mono); font-size: 11px; padding: 3px 9px; border-radius: 6px; background: var(--sage-dim); color: var(--sage); }
+  .mock details { margin-top: 12px; }
+  .mock summary { cursor: pointer; font-weight: 500; color: var(--forest); }
+  .mock blockquote { border-left: 3px solid var(--border-bright); padding: 6px 12px; margin: 8px 0; color: var(--text-dim); font-size: 13px; }
+  .mock .bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); margin-top: 14px; padding-top: 12px; font-size: 13px; }
+  .mock .check { display: inline-flex; align-items: center; gap: 8px; }
+  .mock .check i { width: 16px; height: 16px; border: 1.5px solid var(--border-bright); border-radius: 4px; display: inline-block; }
+  .callout-num { display: inline-flex; width: 20px; height: 20px; border-radius: 50%; background: var(--gold); color: #1b1600; font-family: var(--font-mono); font-size: 11px; font-weight: 700; align-items: center; justify-content: center; vertical-align: middle; margin-left: 8px; flex-shrink: 0; }
+  .keys { list-style: none; counter-reset: k; }
+  .keys li { display: grid; grid-template-columns: 24px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .keys li:last-child { border-bottom: none; }
+  .keys li::before { counter-increment: k; content: counter(k); width: 20px; height: 20px; border-radius: 50%; background: var(--gold); color: #1b1600; font-family: var(--font-mono); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+  .keys strong { display: block; font-weight: 600; }
+  .keys span { color: var(--text-dim); }
+
+  /* ============ TABLES ============ */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th { position: sticky; top: 0; background: var(--surface2); font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border-bright); }
+  tbody td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface2) 45%, transparent); }
+  tbody tr:hover td { background: var(--forest-dim); }
+  td small { display: block; color: var(--text-dim); font-size: 12.5px; margin-top: 2px; }
+  .pill { display: inline-block; font-family: var(--font-mono); font-size: 11px; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+  .pill--ok { background: var(--sage-dim); color: var(--sage); } .pill--no { background: var(--rose-dim); color: var(--rose); }
+  .pill--warn { background: var(--amber-dim); color: var(--amber); } .pill--info { background: var(--forest-dim); color: var(--forest); }
+  .pill--gold { background: var(--gold-dim); color: var(--gold); }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .matrix td, .matrix th { text-align: center; }
+  .matrix td:first-child, .matrix th:first-child { text-align: left; font-weight: 600; }
+
+  /* ============ LIMITS ============ */
+  .limits { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .limits > * { min-width: 0; }
+  .limit { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 16px 12px; }
+  .limit strong { font-family: var(--font-display); font-size: 36px; line-height: 1; display: block; letter-spacing: -0.8px; font-weight: 400; }
+  .limit span { font-size: 12.5px; color: var(--text-dim); display: block; margin-top: 6px; }
+  .limit--lead { background: var(--gold-dim); border-color: color-mix(in srgb, var(--gold) 35%, transparent); }
+  .limit--lead strong { color: var(--gold); }
+
+  /* ============ COMPARE ============ */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .compare > * { min-width: 0; }
+  .compare ul { list-style: none; margin-top: 10px; }
+  .compare li { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; display: grid; grid-template-columns: 110px 1fr; gap: 10px; overflow-wrap: anywhere; }
+  .compare li:last-child { border-bottom: none; }
+  .compare li b { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-dim); font-weight: 500; padding-top: 3px; }
+
+  /* ============ NEVER ============ */
+  .never { background: var(--surface-hero); color: var(--surface-hero-text); border-radius: 18px; padding: 34px 36px; display: grid; grid-template-columns: 1fr 1.6fr; gap: 32px; box-shadow: 0 18px 40px rgba(19,44,40,0.25); }
+  .never > * { min-width: 0; }
+  .never h2 { color: #fff; }
+  .never p { color: rgba(238,242,233,0.72); font-size: 15px; }
+  .never ul { list-style: none; columns: 2; column-gap: 24px; }
+  .never li { break-inside: avoid; padding: 7px 0 7px 18px; position: relative; font-size: 14px; color: rgba(238,242,233,0.9); }
+  .never li::before { content: '×'; position: absolute; left: 0; color: #e2bb4f; font-weight: 700; }
+
+  /* ============ CODE ============ */
+  .cmd { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .cmd header { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .cmd pre { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65; padding: 14px 16px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); }
+  .cmd pre .c { color: var(--text-dim); }
+
+  footer { padding: 40px 0 56px; color: var(--text-dim); font-size: 13px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 22px; }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 900px) {
+    .hero-grid, .anatomy, .grid-3, .compare, .never { grid-template-columns: 1fr; }
+    .limits { grid-template-columns: repeat(2, 1fr); }
+    .never ul { columns: 1; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding: 0 18px; }
+    .grid-2, .kpis { grid-template-columns: 1fr; }
+    section { padding: 40px 0 4px; }
+    .hero { padding: 44px 0 24px; }
+    .mermaid-wrap { padding: 44px 10px 14px; }
+    .never { padding: 26px 22px; }
+  }
+
+  /* ============ PAGE-SPECIFIC ============ */
+  .parts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .parts > * { min-width: 0; }
+  .part { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px 20px 16px; }
+  .part--lead { background: var(--surface-hero); color: var(--surface-hero-text); border-color: transparent; box-shadow: 0 12px 30px rgba(19,44,40,0.2); }
+  .part--lead p, .part--lead .where { color: rgba(238,242,233,0.72); }
+  .part--lead h3 { color: #fff; }
+  .part .where { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); margin-bottom: 8px; word-break: break-all; }
+  .part p { font-size: 13.5px; color: var(--text-dim); }
+  .part .runs { display: inline-block; margin-top: 12px; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.8px; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; background: var(--gold-dim); color: var(--gold); }
+  .part--lead .runs { background: rgba(226,187,79,0.18); color: #e2bb4f; }
+  .weights { display: grid; gap: 10px; }
+  .wbar { display: grid; grid-template-columns: 170px 1fr 52px; gap: 12px; align-items: center; font-size: 14px; }
+  .wbar i { display: block; height: 10px; border-radius: 5px; background: var(--forest); width: var(--w); }
+  .wbar b { font-family: var(--font-mono); font-weight: 500; font-size: 12px; color: var(--text-dim); text-align: right; font-variant-numeric: tabular-nums; }
+  .wbar.gate i { background: var(--rose); }
+  .bands { display: flex; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-bright); margin-top: 6px; }
+  .band { padding: 10px 8px; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.4px; text-transform: uppercase; text-align: center; color: var(--text); border-right: 1px solid var(--border-bright); min-width: 0; overflow-wrap: anywhere; }
+  .band:last-child { border-right: none; }
+  .band small { display: block; font-size: 11px; letter-spacing: 0; text-transform: none; color: var(--text-dim); margin-top: 2px; }
+  .gates { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  .gates > * { min-width: 0; }
+  .actor { display: inline-block; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.8px; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+  .actor--d { background: var(--forest-dim); color: var(--forest); }
+  .actor--r { background: var(--gold-dim); color: var(--gold); }
+  .rule { border-left: 3px solid var(--gold); background: var(--surface2); border-radius: 0 12px 12px 0; padding: 14px 18px; font-size: 14px; color: var(--text-dim); margin-top: 16px; }
+  .rule strong { color: var(--text); }
+  .patterns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .patterns > * { min-width: 0; }
+  .guard { display: grid; grid-template-columns: 1fr 1.6fr; gap: 32px; }
+  .guard > * { min-width: 0; }
+  .guard ul { list-style: none; }
+  .guard li { padding: 9px 0 9px 22px; position: relative; font-size: 14px; color: rgba(238,242,233,0.9); border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .guard li:last-child { border-bottom: none; }
+  .guard li::before { content: '◆'; position: absolute; left: 0; color: #e2bb4f; font-size: 10px; top: 13px; }
+  .guard li strong { color: #fff; }
+  .limit-note { margin-top: 18px; padding: 14px 16px; border: 1px solid rgba(226,187,79,0.35); border-radius: 12px; font-size: 13.5px; color: rgba(238,242,233,0.85); }
+  .limit-note strong { color: #e2bb4f; }
+  @media (max-width: 900px) { .parts, .gates, .patterns, .guard { grid-template-columns: 1fr; } .parts { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 640px) { .parts { grid-template-columns: 1fr; } .wbar { grid-template-columns: 120px 1fr 44px; } }
+</style></head>
+<body>
+
+<div class="topnav">
+  <div class="wrap">
+    <div class="brand">AI Job <span>Search</span></div>
+    <nav>
+      <a href="#parts">Parts</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#apply">Inside /apply</a>
+      <a href="#state">State</a>
+      <a href="#scoring">Scoring</a>
+      <a href="#patterns">Patterns</a>
+      <a href="#guardrails">Guardrails</a>
+      <a href="#jobpilot">vs JobPilot</a>
+      <a href="#source">Source</a>
+    </nav>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow a" style="--i:0">How it works · the local workflow</div>
+      <h1 class="a" style="--i:1">AI Job Search, <em>explained.</em></h1>
+      <p class="lead a" style="--i:2">There is no agent code. <strong>Claude Code is the agent</strong>, the markdown files are the implementation, and the only programs are deterministic: portal clients, PDF checks and a few Python helpers. This page shows how a posting travels from a job board to a compiled, verified application.</p>
+    </div>
+    <div class="kpis">
+      <div class="kpi kpi--hero a-scale" style="--i:2"><strong>0</strong><span>lines of agent code</span></div>
+      <div class="kpi a-scale" style="--i:3"><strong>9</strong><span>methodology files in the core skill</span></div>
+      <div class="kpi a-scale" style="--i:4"><strong>12</strong><span>slash commands</span></div>
+      <div class="kpi a-scale" style="--i:5"><strong>6</strong><span>portal CLIs, none of them AI</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="parts">
+  <div class="wrap">
+    <div class="eyebrow a" style="--i:0">01 · The parts</div>
+    <h2 class="a" style="--i:1">Four kinds of things, two of them prose.</h2>
+    <p class="section-intro a" style="--i:2">Skills and commands are markdown Claude reads. Portal CLIs and helper tools are code Claude runs. Nothing in the repository calls a model.</p>
+    <div class="parts">
+      <div class="part part--lead a" style="--i:3">
+        <div class="where">.claude/skills/*/</div>
+        <h3>Skills</h3>
+        <p>Knowledge and procedure. The core one is nine numbered files: profile, behavioral profile, writing style, the scoring framework, CV and letter templates, interview prep, portal forms, web-research rules. Loaded when a task matches the description.</p>
+        <span class="runs">Claude reads</span>
+      </div>
+      <div class="part a" style="--i:4">
+        <div class="where">.claude/commands/*.md</div>
+        <h3>Commands</h3>
+        <p>Numbered scripts. Typing <code>/apply</code> makes Claude read <code>apply.md</code> and follow its steps in order, reading each reference file exactly once.</p>
+        <span class="runs">Claude reads</span>
+      </div>
+      <div class="part a" style="--i:5">
+        <div class="where">.agents/skills/*/cli/</div>
+        <h3>Portal CLIs</h3>
+        <p>Bun and TypeScript clients, one per job board, with <code>search</code> and <code>detail</code> subcommands and JSON output. Jobindex, Jobnet, Jobbank, Jobdanmark, LinkedIn, Freehire. Each ships its own flag reference so nothing is guessed.</p>
+        <span class="runs">Claude runs</span>
+      </div>
+      <div class="part a" style="--i:6">
+        <div class="where">tools/*.py</div>
+        <h3>Helper tools</h3>
+        <p>Stable job keys, seen-jobs queries and writes, PDF page and text-layer checks, layout measurement, a robots.txt gate. Deterministic, tested in CI.</p>
+        <span class="runs">Claude runs</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pipeline">
+  <div class="wrap">
+    <div class="eyebrow a" style="--i:0">02 · The pipeline</div>
+    <h2 class="a" style="--i:1">Six commands, one loop.</h2>
+    <p class="section-intro a" style="--i:2">Setup builds the profile. Scrape finds postings. Rank triages them. Apply produces one application. Outcome records what happened, and interview prepares the next round. Resolved outcomes feed back into the scoring framework.</p>
+    <div class="mermaid-wrap a" style="--i:3">
+      <div class="zoom-controls">
+        <button onclick="zoomDiagram(this, 1.2)" title="Zoom in">+</button>
+        <button onclick="zoomDiagram(this, 0.8)" title="Zoom out">&minus;</button>
+        <button onclick="resetZoom(this)" title="Reset zoom">&#8634;</button>
+      </div>
+      <pre class="mermaid">
+flowchart TD
+  S["/setup<br/><small>documents folder, pasted CV, or interview → seven profile files</small>"]
+  SC["/scrape<br/><small>portal CLIs in parallel · dedupe · quick fit</small>"]
+  R["/rank<br/><small>parallel sub-agents score up to 10 · vetoes · deadlines</small>"]
+  A["/apply<br/><small>evaluate · draft · review · revise · compile · verify</small>"]
+  O["/outcome<br/><small>tracker row · archive · follow-ups</small>"]
+  I["/interview<br/><small>stage-specific prep pack · mock interview</small>"]
+  S --> SC --> R --> A --> O --> I
+  SC -->|"pick a number"| A
+  I -->|"record feedback"| O
+  O -.->|"resolved applications calibrate 04-job-evaluation.md"| S
+  P[("seen_jobs.json")] --- SC
+  P --- R
+  T[("job_search_tracker.csv")] --- A
+  T --- O
+  AR[("documents/applications/…")] --- O
+  AR --- I
+  classDef cmd fill:#e3efe9,stroke:#1d4a3f,color:#16302b
+  classDef state fill:#f3e7c3,stroke:#a67c00,color:#1b1600
+  class S,SC,R,A,O,I cmd
+  class P,T,AR state
+      </pre>
+    </div>
+    <div class="legend a" style="--i:4">
+      <div class="legend-item"><div class="legend-swatch" style="background:#e3efe9"></div> command</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#f3e7c3"></div> state file</div>
+      <div class="legend-item"><span style="font-family:var(--font-mono)">- - -</span> calibration loop</div>
+    </div>
+    <div class="grid-3" style="margin-top:18px">
+      <div class="ve-card a" style="--i:5">
+        <div class="ve-label label--forest"><span class="dot"></span> /scrape</div>
+        <p>Discovers every enabled portal skill, translates the saved queries into that portal's flags, scopes to 14 days, runs the CLIs in parallel through sub-agents, drops anything already seen or tracked, and assigns high, medium or low. A required language the profile never declares forces low.</p>
+      </div>
+      <div class="ve-card a" style="--i:6">
+        <div class="ve-label label--gold"><span class="dot"></span> /rank</div>
+        <p>Never loads the seen-jobs file into the conversation. A Python query picks ten candidates; sub-agents fetch and score five each and return JSON; the main session weights, vetoes, flags urgency and staleness, then writes back through the same tool. Triage only: apply always re-evaluates.</p>
+      </div>
+      <div class="ve-card a" style="--i:7">
+        <div class="ve-label label--teal"><span class="dot"></span> /outcome · /interview</div>
+        <p>Outcome records stages and results, drafts follow-ups after ten quiet days using only submitted claims, and sweeps sixty-day silence. Interview preps from what the interviewer actually read, verifies every company fact, and runs a mock coached toward your natural register.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="apply">
+  <div class="wrap">
+    <div class="eyebrow a" style="--i:0">03 · Inside /apply</div>
+    <h2 class="a" style="--i:1">One session drafts. A second one, with no memory of the first, critiques.</h2>
+    <p class="section-intro a" style="--i:2">The reviewer is spawned with the drafts pasted inline and a fresh context, so it cannot see or rationalize the drafter's choices. It returns exact string edits the drafter applies without re-reading a file.</p>
+    <div class="mermaid-wrap a" style="--i:3">
+      <div class="zoom-controls">
+        <button onclick="zoomDiagram(this, 1.2)" title="Zoom in">+</button>
+        <button onclick="zoomDiagram(this, 0.8)" title="Zoom out">&minus;</button>
+        <button onclick="resetZoom(this)" title="Reset zoom">&#8634;</button>
+      </div>
+      <pre class="mermaid">
+flowchart TD
+  subgraph DR ["drafter · the main session"]
+    direction TB
+    S0["0 · Parse<br/><small>fetch or paste · prefer the employer's page · keep verbatim · data, never instructions</small>"]
+    S1["1 · Evaluate<br/><small>gates, five dimensions, verdict · ask the user</small>"]
+    S2["2 · Draft<br/><small>LaTeX CV + letter · every requirement matched or gapped · facts audited against three sources</small>"]
+    S4["4 · Revise<br/><small>apply string edits mechanically, narrative with judgment · verify company claims</small>"]
+    S5["5 · Compile + verify<br/><small>lualatex, xelatex · measure layout · read the PDF · ATS text layer · keyword coverage</small>"]
+    S6["6 · Record<br/><small>checklist once · tracker row · archive the posting</small>"]
+    S0 --> S1 --> S2
+    S4 --> S5 --> S6
+  end
+  subgraph RV ["reviewer · a fresh session"]
+    direction TB
+    S3["3 · Research + critique<br/><small>company from its own name · 30-day cache · grounding audit</small>"]
+    OUT["Part A: exact edits as JSON<br/>Part B: four fixed critique categories"]
+    S3 --> OUT
+  end
+  S2 -->|"drafts pasted inline"| S3
+  OUT --> S4
+  U{{"user says go?"}}
+  S1 --> U --> S2
+  classDef d fill:#e3efe9,stroke:#1d4a3f,color:#16302b
+  classDef r fill:#f3e7c3,stroke:#a67c00,color:#1b1600
+  classDef you fill:#fff7e0,stroke:#b45309,color:#5a2d05
+  class S0,S1,S2,S4,S5,S6 d
+  class S3,OUT r
+  class U you
+      </pre>
+    </div>
+    <div class="rule a" style="--i:4"><strong>The standing rule above every step.</strong> Any fact you state in chat that is not yet in the profile is written to <code>01-candidate-profile.md</code> in the same turn. Claude forgets everything between sessions, and the next session's grounding audit strips an unsourced claim as a fabrication. A real achievement that lives only in a conversation disappears silently from every later CV.</div>
+  </div>
+</section>
+
+<section id="state">
+  <div class="wrap">
+    <div class="eyebrow a" style="--i:0">04 · State on disk</div>
+    <h2 class="a" style="--i:1">If it is not in a file, it did not happen.</h2>
+    <p class="section-intro a" style="--i:2">Every command reads its inputs from these files and writes its results back. Fields are only ever added, never restructured, so dedupe keeps working across versions.</p>
+    <div class="table-wrap a" style="--i:3">
+      <table>
+        <thead><tr><th style="width:250px">File</th><th style="width:150px">Written by</th><th style="width:190px">Read by</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>CLAUDE.md</code></td><td>/setup</td><td>every command</td><td>The candidate profile and the workflow rules for the workspace.</td></tr>
+          <tr><td><code>job_scraper/seen_jobs.json</code></td><td>/scrape, /rank</td><td>/scrape, /rank, /upskill</td><td>Every posting ever seen, keyed by <code>tools/job_key.py</code>, with fit, status, portal, deadline and rank fields.</td></tr>
+          <tr><td><code>job_search_tracker.csv</code></td><td>/apply, /outcome, /gmail-sync</td><td>/scrape, /rank, /interview, /upskill, /html-report</td><td>One row per application. Status vocabulary: <span class="pill pill--info">drafted</span> <span class="pill pill--info">applied</span> <span class="pill pill--info">interview</span> <span class="pill pill--info">offer</span> <span class="pill pill--gold">hired</span> <span class="pill pill--no">rejected</span> <span class="pill pill--warn">no_response</span> <span class="pill pill--warn">offer_declined</span> <span class="pill pill--warn">withdrawn</span></td></tr>
+          <tr><td><code>documents/applications/&lt;company&gt;_&lt;role&gt;/</code></td><td>/apply, /outcome, /interview</td><td>/interview, /setup</td><td>The archive: verbatim posting, the submitted CV and letter, <code>outcome.md</code>, prep packs, follow-ups. Git-ignored.</td></tr>
+          <tr><td><code>company_research/&lt;company&gt;.json</code></td><td>the /apply reviewer, /interview</td><td>the same two</td><td>A 30-day cache of where each company fact came from. A hit is a lead, never a verified claim.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="scoring">
+  <div class="wrap">
+    <div class="eyebrow a" style="--i:0">05 · The scoring framework</div>
+    <h2 class="a" style="--i:1">Two gates, then four weights and a pass/fail.</h2>
+    <p class="section-intro a" style="--i:2">Gates are hard filters that run before any number is produced. A posting that fails one is not scored and not drafted; the exact wording is quoted back to you.</p>
+    <div class="gates">
+      <div class="ve-card a" style="--i:3">
+        <div class="ve-label label--rose"><span class="dot"></span> Eligibility gate</div>
+        <p>A stated citizenship, residency or clearance requirement you cannot meet fails the posting. <strong>Silence is not permission</strong>: it is marked unverified and checked on the employer's own site. A company-wide "international applicants welcome" is not role-level permission.</p>
+      </div>
+      <div class="ve-card a" style="--i:4">
+        <div class="ve-label label--rose"><span class="dot"></span> Language gate</div>
+        <p>A required language your profile does not list fails. A listed language at a bar that reads higher than you declared is <strong>flagged, not failed</strong>: scored and drafted, with both quotes shown so you judge. The ad's own language never matters, only the role's.</p>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="ve-card ve-card--recessed a" style="--i:5">
+        <div class="ve-label label--forest"><span class="dot"></span> Weights</div>
+        <div class="weights">
+          <div class="wbar"><span>Technical skills</span><i style="--w:100%"></i><b>30%</b></div>
+          <div class="wbar"><span>Career alignment</span><i style="--w:100%"></i><b>30%</b></div>
+          <div class="wbar"><span>Experience match</span><i style="--w:83%"></i><b>25%</b></div>
+          <div class="wbar"><span>Behavioral fit</span><i style="--w:50%"></i><b>15%</b></div>
+          <div class="wbar gate"><span>Location</span><i style="--w:100%"></i><b>pass/fail</b></div>
+        </div>
+      </div>
+      <div class="ve-card a" style="--i:6">
+        <div class="ve-label label--gold"><span class="dot"></span> Verdict bands</div>
+        <p>The weighted score maps to five bands. Rank uses the same bands for triage; apply re-derives the score with company research before drafting.</p>
+        <div class="bands">
+          <div class="band" style="flex:30;background:var(--rose-dim)">Poor<small>&lt; 30</small></div>
+          <div class="band" style="flex:15;background:var(--amber-dim)">Weak<small>30–44</small></div>
+          <div class="band" style="flex:15;background:var(--gold-dim)">Moderate<small>45–59</small></div>
+          <div class="band" style="flex:15;background:var(--sage-dim)">Good<small>60–74</small></div>
+          <div class="band" style="flex:25;background:var(--forest-dim)">Strong<small>75+</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="patterns">
+  <div class="wrap">
+    <div class="eyebrow a" style="--i:0">06 · The agent patterns</div>
+    <h2 class="a" style="--i:1">Five habits that make prose behave like a system.</h2>
+    <div class="patterns">
+      <div class="ve-card a" style="--i:2"><div class="ve-label label--forest"><span class="dot"></span> Script following</div><h3>Read once, execute in order</h3><p>A command is a numbered procedure. Reference files are read exactly once and stay in context; nothing is re-read "to be safe".</p></div>
+      <div class="ve-card a" style="--i:3"><div class="ve-label label--gold"><span class="dot"></span> Fan-out</div><h3>Parallel sub-agents, context inline</h3><p>Scrape and rank dispatch work through the Agent tool with everything a sub-agent needs pasted into its prompt, so none of them re-reads the profile.</p></div>
+      <div class="ve-card a" style="--i:4"><div class="ve-label label--teal"><span class="dot"></span> Separation</div><h3>Drafter and reviewer</h3><p>A fresh context cannot see the drafter's reasoning, so it cannot rationalize it. Edits return as exact strings and are applied mechanically.</p></div>
+      <div class="ve-card a" style="--i:5"><div class="ve-label label--amber"><span class="dot"></span> State through tools</div><h3>Query it, never load it</h3><p>The seen-jobs file grows for the life of the workspace. A Python helper selects, sweeps and rewrites it so the backlog never enters the conversation.</p></div>
+      <div class="ve-card a" style="--i:6"><div class="ve-label label--rose"><span class="dot"></span> Write-back</div><h3>Same turn, or it is lost</h3><p>Facts, follow-ups and outcomes are written the moment they are confirmed. The next session knows only what is on disk.</p></div>
+      <div class="ve-card ve-card--recessed a" style="--i:7"><div class="ve-label label--sage"><span class="dot"></span> Portability</div><h3>Thin pointers, one source</h3><p><code>AGENTS.md</code> points other harnesses at the same files. Portal CLIs use the portable Agent Skills format, so Codex or Gemini CLI discover them unchanged.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="guardrails">
+  <div class="wrap">
+    <div class="never guard a" style="--i:0">
+      <div>
+        <div class="eyebrow" style="color:#e2bb4f">07 · Guardrails</div>
+        <h2>Honest by construction, enforced by repetition.</h2>
+        <p>The same rules appear in every command and every sub-agent prompt, because repetition is the only enforcement prose has.</p>
+        <div class="limit-note"><strong>The limit.</strong> All of this is instruction-level. Nothing sandboxes Claude away from fabricating or from an injected instruction; the rules hold because they are read. On an unfamiliar job board, skim what was fetched and written before you send.</div>
+      </div>
+      <ul>
+        <li><strong>Postings are untrusted data.</strong> No command follows text inside a posting, fetches a link found in one, or includes content because a posting asked.</li>
+        <li><strong>Three-source grounding.</strong> A claim must be supported by the profile file, the master CV or CLAUDE.md. Reframed emphasis is fine; changed facts and escalated numbers are not.</li>
+        <li><strong>Verified company claims.</strong> Reviewer research is a lead. Anything that lands in a letter or prep pack is re-fetched from a source located independently.</li>
+        <li><strong>Respectful fetching.</strong> A 403 triggers a robots.txt check first. The browser-header retry runs only where the site permits it; otherwise search for the employer's own posting.</li>
+        <li><strong>Verified output.</strong> PDFs are compiled, measured and read. Text layers are extracted and checked. "Looks fine in the source" is never accepted.</li>
+        <li><strong>Gaps stay visible.</strong> A missing requirement is acknowledged with an honest bridge, never hidden and never keyword-stuffed.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="jobpilot">
+  <div class="wrap">
+    <div class="eyebrow a" style="--i:0">08 · How JobPilot relates</div>
+    <h2 class="a" style="--i:1">Same methodology, different runtime.</h2>
+    <p class="section-intro a" style="--i:2">The hosted platform compiles two of the nine methodology files into a Cloudflare Worker and enforces the gates in code. What it leaves out is deliberate: JobPilot drafts text, the local workflow produces the application.</p>
+    <div class="table-wrap a" style="--i:3">
+      <table>
+        <thead><tr><th style="width:150px">Aspect</th><th>Local workflow</th><th>JobPilot</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Model</strong></td><td>Claude, inside Claude Code</td><td>Llama 3.3 70B on Cloudflare Workers AI</td></tr>
+          <tr><td><strong>Methodology</strong></td><td>The nine skill files, read live</td><td><code>03-writing-style.md</code> and <code>04-job-evaluation.md</code> compiled in at build time, hashed per run</td></tr>
+          <tr><td><strong>Search</strong></td><td>Six portal CLIs plus WebSearch fallback</td><td>Freehire only, direct HTTPS</td></tr>
+          <tr><td><strong>Gates and budgets</strong></td><td>Prose rules the model follows</td><td>Code: schema validation, verbatim-evidence checks, call and attempt caps, a review gate before drafting</td></tr>
+          <tr><td><strong>Reviewer</strong></td><td>A second Claude session</td><td>None. The harness validates structure; the human reviews content</td></tr>
+          <tr><td><strong>Output</strong></td><td>Compiled, measured, ATS-checked LaTeX PDFs</td><td>Unverified cover-letter text and CV bullets</td></tr>
+          <tr><td><strong>State</strong></td><td>Files in the repo</td><td>A per-user Durable Object</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="source">
+  <div class="wrap">
+    <div class="eyebrow a" style="--i:0">09 · Where to read the source</div>
+    <h2 class="a" style="--i:1">Every claim above has a file behind it.</h2>
+    <div class="table-wrap a" style="--i:2">
+      <table>
+        <thead><tr><th style="width:330px">Question</th><th>File</th></tr></thead>
+        <tbody>
+          <tr><td>What does /apply do, exactly?</td><td><code>.claude/commands/apply.md</code></td></tr>
+          <tr><td>How is fit scored?</td><td><code>.claude/skills/job-application-assistant/04-job-evaluation.md</code></td></tr>
+          <tr><td>How does search fan out and dedupe?</td><td><code>.claude/skills/job-scraper/SKILL.md</code>, <code>tools/job_key.py</code></td></tr>
+          <tr><td>How does ranking avoid loading the backlog?</td><td><code>.claude/commands/rank.md</code>, <code>tools/rank_state.py</code></td></tr>
+          <tr><td>What are the fetch rules?</td><td><code>.claude/skills/job-application-assistant/09-web-research.md</code>, <code>tools/robots_check.py</code></td></tr>
+          <tr><td>How do other agent harnesses use this?</td><td><code>AGENTS.md</code></td></tr>
+          <tr><td>What does CI check?</td><td><code>tools/lint_skills.py</code>, <code>tools/check_framework_version.py</code>, <code>tools/security_guards.py</code>, <code>tests/</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="section-intro a" style="--i:3; margin-top:18px">The prose version of this page is <code>docs/how-it-works.md</code>. The hosted platform is explained in <code>platform/docs/jobpilot-explainer.html</code>.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>AI Job Search · the local workflow · docs</span>
+    <span>Generated 2026-09-14 from the skills, commands and tools in this repository</span>
+  </div>
+</footer>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  let layout = 'dagre';
+  try {
+    const elk = await import('https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk/dist/mermaid-layout-elk.esm.min.mjs');
+    mermaid.registerLayoutLoaders(elk.default);
+    layout = 'elk';
+  } catch (e) { /* dagre fallback */ }
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    look: 'classic',
+    layout,
+    flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis', nodeSpacing: 40, rankSpacing: 48, padding: 12 },
+    themeVariables: {
+      primaryColor: isDark ? '#1c2f28' : '#e3efe9',
+      primaryBorderColor: isDark ? '#8fcbb6' : '#1d4a3f',
+      primaryTextColor: isDark ? '#e8e4d7' : '#16302b',
+      secondaryColor: isDark ? '#2a2413' : '#f3e7c3',
+      secondaryBorderColor: isDark ? '#e2bb4f' : '#a67c00',
+      tertiaryColor: isDark ? '#15241f' : '#fffdf8',
+      tertiaryBorderColor: isDark ? '#3d5a50' : '#b9c9c1',
+      lineColor: isDark ? '#98a69f' : '#66736d',
+      fontSize: '15px',
+      fontFamily: "'DM Sans', 'Avenir Next', 'Segoe UI', sans-serif",
+      clusterBkg: isDark ? 'rgba(143,203,182,0.06)' : 'rgba(29,74,63,0.05)',
+      clusterBorder: isDark ? '#3d5a50' : '#b9c9c1',
+      edgeLabelBackground: isDark ? '#15241f' : '#fffdf8',
+    }
+  });
+  await mermaid.run({ querySelector: '.mermaid' });
+  document.documentElement.dataset.mermaidLayout = layout;
+</script>
+<script>
+  function updateZoomState(wrap) {
+    var target = wrap.querySelector('.mermaid');
+    if (!target) return;
+    var zoom = parseFloat(target.dataset.zoom || '1');
+    wrap.classList.toggle('is-zoomed', zoom > 1);
+  }
+  function zoomDiagram(btn, factor) {
+    var wrap = btn.closest('.mermaid-wrap');
+    var target = wrap.querySelector('.mermaid');
+    if (!target) return;
+    var current = parseFloat(target.dataset.zoom || '1');
+    var next = Math.min(Math.max(current * factor, 0.3), 5);
+    target.dataset.zoom = next;
+    target.style.transform = 'scale(' + next + ')';
+    updateZoomState(wrap);
+  }
+  function resetZoom(btn) {
+    var wrap = btn.closest('.mermaid-wrap');
+    var target = wrap.querySelector('.mermaid');
+    if (!target) return;
+    target.dataset.zoom = '1';
+    target.style.transform = 'scale(1)';
+    updateZoomState(wrap);
+  }
+  document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
+    wrap.addEventListener('wheel', function(e) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      var target = wrap.querySelector('.mermaid');
+      if (!target) return;
+      var current = parseFloat(target.dataset.zoom || '1');
+      var next = Math.min(Math.max(current * (e.deltaY < 0 ? 1.1 : 0.9), 0.3), 5);
+      target.dataset.zoom = next;
+      target.style.transform = 'scale(' + next + ')';
+      updateZoomState(wrap);
+    }, { passive: false });
+    var startX, startY, scrollL, scrollT;
+    wrap.addEventListener('mousedown', function(e) {
+      if (e.target.closest('.zoom-controls')) return;
+      var target = wrap.querySelector('.mermaid');
+      if (!target || parseFloat(target.dataset.zoom || '1') <= 1) return;
+      wrap.classList.add('is-panning');
+      startX = e.clientX; startY = e.clientY; scrollL = wrap.scrollLeft; scrollT = wrap.scrollTop;
+    });
+    window.addEventListener('mousemove', function(e) {
+      if (!wrap.classList.contains('is-panning')) return;
+      wrap.scrollLeft = scrollL - (e.clientX - startX);
+      wrap.scrollTop = scrollT - (e.clientY - startY);
+    });
+    window.addEventListener('mouseup', function() { wrap.classList.remove('is-panning'); });
+  });
+</script>
+</body>
+</html>

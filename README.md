@@ -237,6 +237,8 @@ ai-job-search/
 
 ## How `/apply` works
 
+For the full picture of how the skills, commands, portal CLIs, helper tools and state files fit together, see [docs/how-it-works.md](docs/how-it-works.md).
+
 The `/apply` command runs a **drafter-reviewer workflow** with mandatory PDF compilation:
 
 1. **Parse** the job posting (URL or text)
