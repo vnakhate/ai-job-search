@@ -14,6 +14,8 @@ npm run dev
 
 Open **http://localhost:8797**. The explicit `local` environment uses labelled fixture jobs and fixture model responses. It does not charge Stripe, invoke Workers AI, or send applications. Enter a synthetic profile, start a search, pause/resume it, review the shortlist, then approve eligible roles to generate text drafts. State persists in `.wrangler/state`. The production environment has no demo bypass.
 
+For a walkthrough of the workspace, controls, limits and API, see [docs/usage.md](docs/usage.md) and the visual explainer at [docs/jobpilot-explainer.html](docs/jobpilot-explainer.html).
+
 ## What works
 
 - OAuth authorization-code + PKCE on web and iOS; server validation of RS256 issuer, audience, expiry and subject. Auth0-compatible issuer and separate SPA/native clients.
