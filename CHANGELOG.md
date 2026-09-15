@@ -15,6 +15,21 @@ per-file diff commands.
 
 ### Added
 
+- **JobPilot hosted platform** (`platform/`) - a Cloudflare Workers app with a
+  responsive web workspace and a native iOS controller that turns a candidate
+  profile into a gated, evidence-backed shortlist and unverified text drafts:
+  durable pause/resume runs, work-rights and language gates enforced in code,
+  Stripe membership, OrcaReplay audit exports, and a handoff export that feeds
+  the local workflow. Documented in `platform/README.md`, `platform/docs/usage.md`
+  and `docs/how-it-works.md`.
+
+- **`tools/import_jobpilot.py`** (`tests/test_import_jobpilot.py`) - imports a
+  JobPilot handoff bundle into `job_scraper/seen_jobs.json` under the canonical
+  `tools/job_key.py` key with status `new`, a fit band derived from JobPilot's
+  score and gates, and `portal`/`source` set to `jobpilot`; postings already seen
+  by URL or key are skipped, so `/rank` scores the imports and `/scrape` dedupes
+  against them.
+
 - **`/expand` project and portfolio expansion** (`.claude/commands/expand.md`,
   `tests/test_expand_command.py`) - expands candidate discovery
   to technical projects from public GitHub repositories, extracting structured summaries

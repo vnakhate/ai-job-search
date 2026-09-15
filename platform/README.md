@@ -27,6 +27,7 @@ For a walkthrough of the workspace, controls, limits and API, see [docs/usage.md
 - Shared web/iOS start, pause, resume, retry, cancel, shortlist review, drafts and history. Pause takes effect after the current bounded step (up to about 25 seconds).
 - Inspectable timelines and validated exports using the actual `@orcareplay/core` and `@orcareplay/schema` packages.
 - A handoff export per run (`GET /api/runs/:id/handoff`, the web UI's **Export for /apply** button) that `tools/import_jobpilot.py` lands in the local `seen_jobs.json`, so `/rank` and `/apply` take over where the hosted app stops. See [docs/usage.md](docs/usage.md).
+- Applicant-facing details: profile rejections name the failing field and the form carries the schema limits; drafts have copy and Markdown download controls; cards show the posting's age and a blocked role says which gate blocked it; **Mark as applied** stamps a date per posting, counted in history and carried in the handoff.
 
 ## Production setup
 
@@ -94,7 +95,7 @@ npm run test:uat
 npx wrangler deploy --dry-run --env="" --outdir /tmp/jobpilot-worker-build
 ```
 
-Unit/contract tests cover the actual account state machine, authentication, gates, billing signatures and real Orca package compatibility. The desktop/mobile UAT suite starts a separate local Worker on port 8798 with temporary state, so it never mutates the interactive demo. Its lifecycle scenarios use the real Worker runtime with fixture providers. One explicitly named error-display test injects an HTTP failure. See [the UAT matrix and staging/native acceptance procedure](docs/uat.md). `tests/cloudflare-stub.ts` only substitutes the Durable Object base class for fast unit tests; native alarms are exercised by the browser journey.
+Unit/contract tests cover the actual account state machine, authentication, gates, billing signatures and real Orca package compatibility. The desktop/mobile UAT suite (fourteen scenarios, 28 executions) starts a separate local Worker on port 8798 with temporary state, so it never mutates the interactive demo. Its lifecycle scenarios use the real Worker runtime with fixture providers. One explicitly named error-display test injects an HTTP failure. See [the UAT matrix and staging/native acceptance procedure](docs/uat.md). `tests/cloudflare-stub.ts` only substitutes the Durable Object base class for fast unit tests; native alarms are exercised by the browser journey.
 
 ## Boundaries of this version
 

@@ -215,12 +215,16 @@ ai-job-search/
 │   ├── diplomas/                      # Degree certificates and transcripts
 │   ├── references/                    # Reference letters
 │   └── applications/                  # Past application records (<company>_<role>/)
+├── docs/                              # How the workflow works: how-it-works.md and its visual explainer
+├── platform/                          # JobPilot hosted app: Cloudflare Worker, web workspace, iOS controller
 ├── .github/workflows/ci.yml           # CI: LaTeX smoke compiles, skill lint, CLI typechecks
+├── .github/workflows/platform.yml     # CI: JobPilot checks, build, deploy dry run, desktop/mobile UAT
 ├── salary_lookup.py                   # Salary benchmarking tool (BYO data)
 ├── tools/
 │   ├── check_framework_version.py     # CI check: framework_version bumped when skill files change
 │   ├── check_upstream_updates.py      # Preview which personalized files an upstream update touches
 │   ├── convert_salary_excel.py        # Convert salary Excel to JSON
+│   ├── import_jobpilot.py             # Import a JobPilot handoff bundle into seen_jobs.json
 │   ├── lint_skills.py                 # CI lint for skills, commands, settings.json
 │   ├── robots_check.py                # Gate the browser-header retry against robots.txt
 │   ├── security_guards.py             # CI guards: permission allowlist, gitignore rules, manifests
@@ -394,4 +398,4 @@ MIT
 
 ## Hosted web and iOS platform
 
-The [JobPilot platform](platform/README.md) adds a Cloudflare Workers backend, a paid web workspace, and a native iOS controller, with OrcaReplay audit exports and harness-engineering contracts. Run the local demo with `cd platform && npm ci && npm run dev`. See its README for production configuration and verification boundaries.
+The [JobPilot platform](platform/README.md) adds a Cloudflare Workers backend, a paid web workspace, and a native iOS controller, with OrcaReplay audit exports and harness-engineering contracts. Run the local demo with `cd platform && npm ci && npm run dev`. See its README for production configuration and verification boundaries. The two halves connect: a finished JobPilot run exports a handoff bundle that `tools/import_jobpilot.py` lands in `job_scraper/seen_jobs.json`, so `/rank` and `/apply` continue where the app stops. [docs/how-it-works.md](docs/how-it-works.md) explains how the slash commands and the hosted app relate.

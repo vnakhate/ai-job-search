@@ -18,6 +18,8 @@ flowchart LR
   Review --> Draft[Unverified text drafts]
   Account --> Audit[Private summary timeline]
   Audit --> Export[Local Orca TraceWriter export]
+  Account --> Handoff[Handoff export]
+  Handoff --> Local[Local /rank and /apply via tools/import_jobpilot.py]
 ```
 
 ## Contracts
@@ -32,6 +34,7 @@ flowchart LR
 | External text | Fixed source origin, no user/model URL fetching; structured schemas; verbatim quote checks; output escaped in web UI | Source and schema tests; browser renders fixture postings |
 | Applications | Eligibility PASS and language not FAIL required; explicit shortlist review; no send tool | Early/invalid/duplicate approval tests; completed draft journey |
 | Trace | Only supported Orca schema event types, no raw profile or provider credentials, local sealing | Real Orca writer/schema integration test |
+| Handoff | Evaluated postings with verbatim text, gates, decisions, drafts and applied marks; never the profile snapshot; the local import skips postings already seen by URL or key and never creates tracker rows | Route contract tests; import tool unit tests; live import against the demo |
 | Clients | One API and shared durable state; independent web/native login clients, same identity audience | Browser end-to-end; Swift SDK compile (native runtime pending) |
 
 The model selects a focused query, interprets postings, applies the canonical evaluation framework and writes drafts. The harness selects permitted stages, validates structured responses and evidence, controls costs, and authorizes transitions. Model output cannot choose a URL to fetch, a tenant, a payment price, an employer message, or an application submission action.

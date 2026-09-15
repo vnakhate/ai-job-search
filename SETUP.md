@@ -329,8 +329,19 @@ Upstream keeps improving the methodology files your fork has personalized, so pl
      Forks also inherit a `.github/workflows/upstream-watch.yml` that runs this weekly and writes the result into a single rolling issue (it no-ops on the upstream template itself, and stays disabled on a fork until you enable Actions).
 3. **Merge normally.** `git merge upstream/master` (or `git pull`) three-way-merges upstream's edits around your personalization; because methodology edits rarely touch the lines `/setup` filled in, most updates land cleanly. A conflict in a personalized file is a *feature*, not a failure — it means upstream changed methodology in a section you customized, and the version marker plus its changelog commit tell you why. Resolve by keeping your data and adopting the methodology change around it.
 
-## Troubleshooting
+## 9. Optional: the hosted JobPilot app
 
+The `platform/` folder is a separate, optional product layer: a Cloudflare Workers
+app with a web workspace and an iOS controller that runs the same eligibility,
+language and scoring methodology from a browser. It needs Node 22.12+ and, for a
+live deployment, Cloudflare, Auth0 and Stripe accounts. Try the local demo with
+`cd platform && npm ci && npm run dev`, then read
+[platform/README.md](platform/README.md) for production setup and
+[platform/docs/usage.md](platform/docs/usage.md) for the workspace, including
+the handoff export that `tools/import_jobpilot.py` brings back into this
+workflow's `seen_jobs.json`.
+
+## Troubleshooting
 ### "salary_data.json not found"
 This is expected if you haven't set up salary benchmarking. The `/apply` workflow skips this step automatically.
 
