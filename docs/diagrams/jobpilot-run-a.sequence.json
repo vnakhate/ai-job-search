@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "JobPilot run, part 1: start, search, and the gates",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "views": [
+      {
+        "id": "start",
+        "label": "Start",
+        "focus": [
+          "candidate",
+          "worker",
+          "agent"
+        ],
+        "note": "One request reserves a monthly run and returns immediately; alarms do the work."
+      },
+      {
+        "id": "steps",
+        "label": "Bounded steps",
+        "focus": [
+          "agent",
+          "ai",
+          "freehire"
+        ],
+        "note": "Plan, search, then one evaluation per posting, each a separate alarm with its own budget."
+      }
+    ],
+    "viewBox": [
+      1080,
+      498
+    ]
+  },
+  "participants": [
+    {
+      "id": "candidate",
+      "type": "external",
+      "label": "Candidate",
+      "sublabel": "browser or iPhone"
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Worker",
+      "sublabel": "/api · auth + origin"
+    },
+    {
+      "id": "agent",
+      "type": "database",
+      "label": "AccountAgent",
+      "sublabel": "Durable Object"
+    },
+    {
+      "id": "ai",
+      "type": "cloud",
+      "label": "Workers AI",
+      "sublabel": "llama-3.3-70b"
+    },
+    {
+      "id": "freehire",
+      "type": "external",
+      "label": "Freehire",
+      "sublabel": "jobs API"
+    }
+  ],
+  "messages": [
+    {
+      "id": "start-run",
+      "from": "candidate",
+      "to": "worker",
+      "y": 185,
+      "label": "POST /api/runs {requestId}",
+      "variant": "emphasis"
+    },
+    {
+      "id": "forward-start",
+      "from": "worker",
+      "to": "agent",
+      "y": 213,
+      "label": "forward with verified subject"
+    },
+    {
+      "id": "run-created",
+      "from": "agent",
+      "to": "candidate",
+      "y": 241,
+      "label": "201 run: running, 1 of 60 reserved",
+      "variant": "return"
+    },
+    {
+      "id": "plan",
+      "from": "agent",
+      "to": "ai",
+      "y": 275,
+      "label": "plan: focused query"
+    },
+    {
+      "id": "plan-json",
+      "from": "ai",
+      "to": "agent",
+      "y": 303,
+      "label": "schema-checked JSON",
+      "variant": "return"
+    },
+    {
+      "id": "search",
+      "from": "agent",
+      "to": "freehire",
+      "y": 331,
+      "label": "search country + query, 14 days"
+    },
+    {
+      "id": "postings",
+      "from": "freehire",
+      "to": "agent",
+      "y": 359,
+      "label": "up to 8 postings",
+      "variant": "return"
+    },
+    {
+      "id": "evaluate",
+      "from": "agent",
+      "to": "ai",
+      "y": 387,
+      "label": "evaluate each posting: gates + evidence",
+      "variant": "emphasis",
+      "note": "quotes must appear in the posting; a FAIL gate forces score 0"
+    },
+    {
+      "id": "scores",
+      "from": "ai",
+      "to": "agent",
+      "y": 415,
+      "label": "score, gates, quotes, gaps",
+      "variant": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Budgets reserved first",
+      "items": [
+        "A run reserves one of 60 monthly searches at creation",
+        "Each model call is counted before the request leaves"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Gates before scores",
+      "items": [
+        "Work rights: PASS, FAIL or UNVERIFIED; language: PASS, FAIL or FLAG",
+        "Evidence lines must be verbatim quotes from the posting; a FAIL gate forces score 0"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "What ends this part",
+      "items": [
+        "Status becomes review once every posting is evaluated",
+        "Three failed attempts on a step fail the run visibly, with retry"
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 165,
+      "to": 259,
+      "label": "Start"
+    },
+    {
+      "from": 255,
+      "to": 433,
+      "label": "Bounded alarm steps"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "worker",
+      "from": 180,
+      "to": 218,
+      "type": "backend"
+    },
+    {
+      "participant": "agent",
+      "from": 208,
+      "to": 420,
+      "type": "database"
+    },
+    {
+      "participant": "ai",
+      "from": 270,
+      "to": 420,
+      "type": "cloud"
+    },
+    {
+      "participant": "freehire",
+      "from": 326,
+      "to": 364,
+      "type": "external"
+    }
+  ]
+}

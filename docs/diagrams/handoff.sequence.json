@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "The bridge: a JobPilot run enters the local workflow",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1080,
+      610
+    ],
+    "views": [
+      {
+        "id": "export",
+        "label": "Export",
+        "focus": [
+          "candidate",
+          "jobpilot"
+        ],
+        "note": "One click downloads the bundle and shows the import command."
+      },
+      {
+        "id": "import",
+        "label": "Import",
+        "focus": [
+          "candidate",
+          "importer",
+          "seen"
+        ],
+        "note": "Canonical keys, duplicate skipping, an atomic write, and a report."
+      },
+      {
+        "id": "rank",
+        "label": "Continue locally",
+        "focus": [
+          "candidate",
+          "claude",
+          "seen"
+        ],
+        "note": "/rank queries the file rather than loading it; imported postings are ordinary candidates."
+      }
+    ],
+    "column_fit": "spread"
+  },
+  "participants": [
+    {
+      "id": "candidate",
+      "type": "external",
+      "label": "Candidate",
+      "sublabel": "browser, then terminal"
+    },
+    {
+      "id": "jobpilot",
+      "type": "backend",
+      "label": "JobPilot",
+      "sublabel": "web + Worker"
+    },
+    {
+      "id": "importer",
+      "type": "backend",
+      "label": "import_jobpilot.py",
+      "sublabel": "tools/"
+    },
+    {
+      "id": "seen",
+      "type": "database",
+      "label": "seen_jobs.json",
+      "sublabel": "local state"
+    },
+    {
+      "id": "claude",
+      "type": "backend",
+      "label": "Claude Code",
+      "sublabel": "/rank · /apply"
+    }
+  ],
+  "segments": [
+    {
+      "from": 165,
+      "to": 233,
+      "label": "Export"
+    },
+    {
+      "from": 231,
+      "to": 389,
+      "label": "Import"
+    },
+    {
+      "from": 387,
+      "to": 545,
+      "label": "Continue locally"
+    }
+  ],
+  "messages": [
+    {
+      "id": "export-click",
+      "from": "candidate",
+      "to": "jobpilot",
+      "y": 185,
+      "label": "Export for /apply",
+      "variant": "emphasis"
+    },
+    {
+      "id": "bundle",
+      "from": "jobpilot",
+      "to": "candidate",
+      "y": 215,
+      "label": "run_<id>-handoff.json + import command",
+      "variant": "return"
+    },
+    {
+      "id": "run-import",
+      "from": "candidate",
+      "to": "importer",
+      "y": 251,
+      "label": "python3 tools/import_jobpilot.py <file>",
+      "variant": "emphasis"
+    },
+    {
+      "id": "read-state",
+      "from": "importer",
+      "to": "seen",
+      "y": 281,
+      "label": "read existing keys and URLs"
+    },
+    {
+      "id": "known",
+      "from": "seen",
+      "to": "importer",
+      "y": 311,
+      "label": "known entries",
+      "variant": "return"
+    },
+    {
+      "id": "write",
+      "from": "importer",
+      "to": "seen",
+      "y": 341,
+      "label": "add new entries: status new, fit band, portal jobpilot",
+      "variant": "emphasis",
+      "note": "atomic replace; seen URLs and keys are skipped, never overwritten"
+    },
+    {
+      "id": "report",
+      "from": "importer",
+      "to": "candidate",
+      "y": 371,
+      "label": "imported and skipped, with reasons",
+      "variant": "return"
+    },
+    {
+      "id": "rank",
+      "from": "candidate",
+      "to": "claude",
+      "y": 407,
+      "label": "/rank"
+    },
+    {
+      "id": "query",
+      "from": "claude",
+      "to": "seen",
+      "y": 437,
+      "label": "rank_state candidates, a query not a load"
+    },
+    {
+      "id": "candidates",
+      "from": "seen",
+      "to": "claude",
+      "y": 467,
+      "label": "new candidates, imports included",
+      "variant": "return"
+    },
+    {
+      "id": "shortlist",
+      "from": "claude",
+      "to": "candidate",
+      "y": 497,
+      "label": "ranked shortlist with strengths and gaps",
+      "variant": "return"
+    },
+    {
+      "id": "apply",
+      "from": "candidate",
+      "to": "claude",
+      "y": 527,
+      "label": "/apply <url>",
+      "variant": "dashed"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "jobpilot",
+      "from": 180,
+      "to": 220,
+      "type": "backend"
+    },
+    {
+      "participant": "importer",
+      "from": 246,
+      "to": 376,
+      "type": "backend"
+    },
+    {
+      "participant": "seen",
+      "from": 276,
+      "to": 472,
+      "type": "database"
+    },
+    {
+      "participant": "claude",
+      "from": 402,
+      "to": 532,
+      "type": "backend"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "What crosses",
+      "items": [
+        "Every evaluated posting with verbatim text, gates, score, decision, draft and applied mark",
+        "Never the candidate profile snapshot"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "What the import guarantees",
+      "items": [
+        "Keys from tools/job_key.py, the same rule /scrape uses",
+        "Fit band from score and gates: a failed gate is low"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "What stays manual",
+      "items": [
+        "The download and the one command",
+        "Nothing flows back from the tracker to JobPilot"
+      ]
+    }
+  ]
+}

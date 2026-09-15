@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Job Search Diagrams</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --font-display: 'Instrument Serif', Georgia, serif; --font-body: 'DM Sans', 'Avenir Next', 'Segoe UI', sans-serif; --font-mono: 'JetBrains Mono', Menlo, monospace;
+    --bg: #f6f3ec; --surface: #fffdf8; --surface2: #efeadf; --border: rgba(20,40,35,0.09); --border-bright: rgba(20,40,35,0.18); --text: #16302b; --text-dim: #66736d;
+    --forest: #1d4a3f; --forest-dim: rgba(29,74,63,0.08); --gold: #a67c00; --gold-dim: rgba(166,124,0,0.10); --teal: #0f766e; --violet: #6d28d9; --amber: #b45309; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0f1b18; --surface: #15241f; --surface2: #1c2f28; --border: rgba(255,255,255,0.07); --border-bright: rgba(255,255,255,0.15); --text: #e8e4d7; --text-dim: #98a69f; --forest: #8fcbb6; --forest-dim: rgba(143,203,182,0.12); --gold: #e2bb4f; --gold-dim: rgba(226,187,79,0.12); --teal: #6ad3c7; --violet: #c4b5fd; --amber: #f2b45a; } }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); background-image: radial-gradient(ellipse at 12% -5%, var(--gold-dim) 0%, transparent 45%), radial-gradient(ellipse at 95% 30%, var(--forest-dim) 0%, transparent 40%); color: var(--text); font-family: var(--font-body); font-size: 15px; line-height: 1.6; min-height: 100vh; }
+  code { font-family: var(--font-mono); font-size: 0.86em; background: var(--forest-dim); color: var(--forest); padding: 1px 6px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 56px 32px 64px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .eyebrow::before { content: ''; width: 22px; height: 1px; background: var(--gold); }
+  h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(40px, 5.6vw, 64px); line-height: 1.02; letter-spacing: -1px; text-wrap: balance; }
+  h1 em { font-style: italic; color: var(--gold); }
+  .lead { font-size: 17px; color: var(--text-dim); max-width: 64ch; margin: 18px 0 36px; }
+  .lead strong { color: var(--text); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid > * { min-width: 0; }
+  a.card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; text-decoration: none; color: inherit; transition: border-color 0.15s, transform 0.15s; }
+  a.card:hover { border-color: var(--border-bright); transform: translateY(-1px); }
+  a.card.lead-card { grid-column: 1 / -1; background: #132c28; color: #eef2e9; border-color: transparent; box-shadow: 0 14px 34px rgba(19,44,40,0.22); }
+  a.card.lead-card .kind, a.card.lead-card p { color: rgba(238,242,233,0.72); }
+  a.card.lead-card h2 { color: #fff; }
+  .kind { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim); display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .kind .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: currentColor; }
+  .kind.arch { color: var(--gold); } .kind.seq { color: var(--teal); } .kind.bridge { color: var(--amber); } .kind.local { color: var(--violet); }
+  a.card.lead-card .kind.arch { color: #e2bb4f; }
+  h2 { font-family: var(--font-display); font-weight: 400; font-size: 26px; line-height: 1.1; letter-spacing: -0.3px; margin-bottom: 8px; }
+  a.card p { color: var(--text-dim); font-size: 14px; }
+  .read { margin-top: 12px; font-size: 13px; color: var(--text-dim); }
+  .read strong { color: var(--text); font-weight: 600; }
+  .note { margin-top: 32px; border-left: 3px solid var(--gold); background: var(--surface2); border-radius: 0 12px 12px 0; padding: 14px 18px; font-size: 14px; color: var(--text-dim); }
+  .note strong { color: var(--text); }
+  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 13px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } .wrap { padding: 36px 18px 48px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Diagrams · generated with archify from the code</div>
+  <h1>AI Job Search, <em>drawn.</em></h1>
+  <p class="lead">Six interactive diagrams, each validated against the repository at the pinned revision and checked for first-screen fit on desktop. Every one opens with <strong>guided chapters, search, focus and relationship tracing</strong>; press Present for a walkthrough, or Export for PNG and SVG.</p>
+  <div class="grid">
+    <a class="card lead-card" href="system-architecture.html">
+      <div class="kind arch"><span class="dot"></span> Architecture</div>
+      <h2>Hosted half, local half, and the bridge</h2>
+      <p>Twelve components in two regions: the Cloudflare Worker, per-user Durable Object and Workers AI on one side; the import tool, local state files, portal CLIs and the Claude Code workflow on the other. Auth0, Stripe and Freehire sit outside both.</p>
+      <div class="read"><strong>Read it as:</strong> clients in from the left, identity and billing from above, the model and the job source to the right, and the dashed handoff dropping into your machine.</div>
+    </a>
+    <a class="card" href="jobpilot-run-a-sequence.html">
+      <div class="kind seq"><span class="dot"></span> Sequence · JobPilot run, part 1</div>
+      <h2>Start, search, and the gates</h2>
+      <p>One request reserves a monthly run; alarms then plan, search Freehire and evaluate each posting with the work-rights and language gates and verbatim evidence.</p>
+      <div class="read"><strong>Read it as:</strong> everything after the 201 happens on alarms, one bounded step each.</div>
+    </a>
+    <a class="card" href="jobpilot-run-b-sequence.html">
+      <div class="kind seq"><span class="dot"></span> Sequence · JobPilot run, part 2</div>
+      <h2>Review, draft, and handoff</h2>
+      <p>The web app polls until the run needs review, the candidate ticks roles, one draft is written per approved role, and the handoff bundle is downloaded.</p>
+      <div class="read"><strong>Read it as:</strong> nothing is drafted before the tick, and nothing is ever sent.</div>
+    </a>
+    <a class="card" href="apply-pipeline-a-sequence.html">
+      <div class="kind local"><span class="dot"></span> Sequence · /apply, part 1</div>
+      <h2>Evaluate the posting and draft</h2>
+      <p>The drafter session fetches the posting as untrusted data, scores it with the gates and five dimensions, asks you, then writes both LaTeX documents with three-source grounding.</p>
+      <div class="read"><strong>Read it as:</strong> the human decision sits between evaluation and any file being written.</div>
+    </a>
+    <a class="card" href="apply-pipeline-b-sequence.html">
+      <div class="kind local"><span class="dot"></span> Sequence · /apply, part 2</div>
+      <h2>Review, verify the PDFs, record</h2>
+      <p>A fresh reviewer session researches the company and returns exact edits; the drafter applies them, compiles and measures the PDFs, checks the text layer, and records the tracker row.</p>
+      <div class="read"><strong>Read it as:</strong> the reviewer never sees the drafter's reasoning, and the PDF is verified before you do.</div>
+    </a>
+    <a class="card" href="handoff-sequence.html" style="grid-column: 1 / -1">
+      <div class="kind bridge"><span class="dot"></span> Sequence · the bridge</div>
+      <h2>A JobPilot run enters the local workflow</h2>
+      <p>Export in the browser, one command in the terminal, canonical keys and duplicate skipping in <code>seen_jobs.json</code>, then <code>/rank</code> picks the postings up as ordinary candidates.</p>
+      <div class="read"><strong>Read it as:</strong> the only manual steps are the download and the command; the tracker is never written by an import.</div>
+    </a>
+  </div>
+  <div class="note"><strong>Provenance.</strong> The architecture cites source files (<code>SRC</code> badges) verified against revision <code>3fc98ea</code>; the sequences follow the routes in <code>platform/worker/account.ts</code> and the steps in <code>.claude/commands/apply.md</code>. The JSON specifications sit beside each page and regenerate it with <code>archify deliver</code>.</div>
+  <footer><span>AI Job Search · docs/diagrams</span><span>Six diagrams · archify showcase profile · desktop first-screen checked</span></footer>
+</div>
+</body>
+</html>

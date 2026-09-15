@@ -1,0 +1,398 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "AI Job Search: hosted half, local half, and the bridge",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1300,
+      630
+    ],
+    "views": [
+      {
+        "id": "hosted-run",
+        "label": "Hosted run path",
+        "focus": [
+          "web",
+          "ios",
+          "worker",
+          "account",
+          "ai",
+          "freehire"
+        ],
+        "note": "A candidate's run: clients to the Worker, into their Durable Object, out to the model and the job source."
+      },
+      {
+        "id": "identity-billing",
+        "label": "Identity and billing",
+        "focus": [
+          "auth0",
+          "stripe",
+          "worker"
+        ],
+        "note": "Auth0 tokens are verified at the edge; Stripe webhooks are signature-checked and entitlement is re-read from Stripe."
+      },
+      {
+        "id": "bridge",
+        "label": "The bridge",
+        "focus": [
+          "account",
+          "importer",
+          "files"
+        ],
+        "note": "A finished run downloads as a handoff bundle; the import tool lands it in the local seen-jobs file."
+      },
+      {
+        "id": "local",
+        "label": "Local production",
+        "focus": [
+          "files",
+          "claude",
+          "portals"
+        ],
+        "note": "The slash commands rank, draft, verify PDFs and track outcomes from plain files."
+      }
+    ],
+    "repository": {
+      "url": "https://github.com/vnakhate/ai-job-search",
+      "revision": "3fc98ea44eadd4a7829929e938d03d28cf946b19"
+    }
+  },
+  "components": [
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "Web workspace",
+      "sublabel": "Vite SPA · PKCE token",
+      "pos": [
+        40,
+        170
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "platform/web/main.ts"
+        }
+      ]
+    },
+    {
+      "id": "ios",
+      "type": "frontend",
+      "label": "iOS controller",
+      "sublabel": "SwiftUI · Keychain",
+      "pos": [
+        40,
+        290
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "platform/ios/JobPilot/JobPilotApp.swift"
+        }
+      ]
+    },
+    {
+      "id": "auth0",
+      "type": "security",
+      "label": "Auth0",
+      "sublabel": "RS256 · JWKS",
+      "pos": [
+        330,
+        20
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "OIDC"
+    },
+    {
+      "id": "stripe",
+      "type": "external",
+      "label": "Stripe",
+      "sublabel": "checkout · portal · webhooks",
+      "pos": [
+        520,
+        20
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Cloudflare Worker",
+      "sublabel": "/api/* · origin + body checks",
+      "pos": [
+        330,
+        190
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "platform/worker/index.ts"
+        }
+      ]
+    },
+    {
+      "id": "account",
+      "type": "database",
+      "label": "Durable Object",
+      "sublabel": "one per user · SQLite",
+      "pos": [
+        640,
+        190
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "platform/worker/account.ts"
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "type": "cloud",
+      "label": "Workers AI",
+      "sublabel": "llama-3.3-70b · JSON",
+      "pos": [
+        1000,
+        150
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "platform/worker/providers.ts"
+        }
+      ]
+    },
+    {
+      "id": "freehire",
+      "type": "external",
+      "label": "Freehire",
+      "sublabel": "public jobs API",
+      "pos": [
+        1000,
+        300
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "importer",
+      "type": "backend",
+      "label": "import_jobpilot.py",
+      "sublabel": "canonical keys · dedupe",
+      "pos": [
+        640,
+        410
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "tools/import_jobpilot.py"
+        }
+      ]
+    },
+    {
+      "id": "files",
+      "type": "database",
+      "label": "Local state files",
+      "sublabel": "seen_jobs · tracker · archive",
+      "pos": [
+        1000,
+        410
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "claude",
+      "type": "backend",
+      "label": "Claude Code workflow",
+      "sublabel": "/rank · /apply · /outcome",
+      "pos": [
+        1000,
+        530
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": ".claude/commands/apply.md"
+        }
+      ]
+    },
+    {
+      "id": "portals",
+      "type": "backend",
+      "label": "Portal search CLIs",
+      "sublabel": "Bun · six job boards",
+      "pos": [
+        640,
+        530
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": ".agents/skills/freehire-search/SKILL.md"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Cloudflare · JobPilot",
+      "wraps": [
+        "worker",
+        "account",
+        "ai"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Your machine · local workflow",
+      "wraps": [
+        "importer",
+        "files",
+        "portals",
+        "claude"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "web-worker",
+      "from": "web",
+      "to": "worker",
+      "label": "HTTPS + bearer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ios-worker",
+      "from": "ios",
+      "to": "worker",
+      "label": "HTTPS + bearer"
+    },
+    {
+      "id": "auth0-worker",
+      "from": "auth0",
+      "to": "worker",
+      "label": "verify JWT",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "stripe-worker",
+      "from": "stripe",
+      "to": "worker",
+      "label": "signed webhooks",
+      "variant": "dashed"
+    },
+    {
+      "id": "worker-account",
+      "from": "worker",
+      "to": "account",
+      "label": "verified subject",
+      "variant": "emphasis"
+    },
+    {
+      "id": "account-ai",
+      "from": "account",
+      "to": "ai",
+      "label": "plan · evaluate · draft"
+    },
+    {
+      "id": "account-freehire",
+      "from": "account",
+      "to": "freehire",
+      "label": "search, 8 postings"
+    },
+    {
+      "id": "account-importer",
+      "from": "account",
+      "to": "importer",
+      "label": "handoff bundle",
+      "variant": "dashed",
+      "labelAt": [
+        725,
+        335
+      ]
+    },
+    {
+      "id": "importer-files",
+      "from": "importer",
+      "to": "files",
+      "label": "new entries"
+    },
+    {
+      "id": "claude-files",
+      "from": "claude",
+      "to": "files",
+      "label": "reads and writes"
+    },
+    {
+      "id": "portals-claude",
+      "from": "portals",
+      "to": "claude",
+      "label": "search results"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Hosted half",
+      "items": [
+        "Guardrails enforced in code: budgets, gates, verbatim evidence, no send capability",
+        "Durable runs: state and alarm commit in one transaction"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "The bridge",
+      "items": [
+        "GET /api/runs/:id/handoff exports evaluated postings, decisions and drafts, never the profile",
+        "tools/import_jobpilot.py writes canonical keys, skips seen URLs and keys, never creates tracker rows"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Local half",
+      "items": [
+        "Drafter and reviewer sessions, three-source grounding audit",
+        "Compiled, measured, ATS-checked PDFs"
+      ]
+    }
+  ]
+}

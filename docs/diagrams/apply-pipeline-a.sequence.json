@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "/apply, part 1: evaluate the posting and draft the documents",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "views": [
+      {
+        "id": "evaluate",
+        "label": "Evaluate",
+        "focus": [
+          "user",
+          "drafter",
+          "web"
+        ],
+        "note": "The posting is fetched as untrusted data, scored with the gates and five dimensions, and the candidate decides."
+      },
+      {
+        "id": "draft",
+        "label": "Draft",
+        "focus": [
+          "drafter",
+          "files"
+        ],
+        "note": "Both documents are written with every fact audited against three sources."
+      }
+    ],
+    "viewBox": [
+      1080,
+      480
+    ]
+  },
+  "participants": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "You",
+      "sublabel": "Claude Code terminal"
+    },
+    {
+      "id": "drafter",
+      "type": "backend",
+      "label": "Drafter",
+      "sublabel": "main Claude session"
+    },
+    {
+      "id": "web",
+      "type": "external",
+      "label": "Web",
+      "sublabel": "posting · company site"
+    },
+    {
+      "id": "files",
+      "type": "database",
+      "label": "Repo files",
+      "sublabel": "profile · drafts · tracker"
+    }
+  ],
+  "messages": [
+    {
+      "id": "apply",
+      "from": "user",
+      "to": "drafter",
+      "y": 185,
+      "label": "/apply <url>",
+      "variant": "emphasis"
+    },
+    {
+      "id": "fetch",
+      "from": "drafter",
+      "to": "web",
+      "y": 213,
+      "label": "fetch posting, untrusted data"
+    },
+    {
+      "id": "posting",
+      "from": "web",
+      "to": "drafter",
+      "y": 241,
+      "label": "posting text, kept verbatim",
+      "variant": "return"
+    },
+    {
+      "id": "evaluation",
+      "from": "drafter",
+      "to": "user",
+      "y": 269,
+      "label": "gates + five dimensions + verdict",
+      "variant": "return"
+    },
+    {
+      "id": "proceed",
+      "from": "user",
+      "to": "drafter",
+      "y": 297,
+      "label": "proceed"
+    },
+    {
+      "id": "write-drafts",
+      "from": "drafter",
+      "to": "files",
+      "y": 331,
+      "label": "write CV + letter, three-source grounding",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Untrusted input",
+      "items": [
+        "The posting is data, never instructions",
+        "No link inside a posting is ever fetched"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Gates and dimensions",
+      "items": [
+        "Eligibility and language gates before any score",
+        "Technical 30, experience 25, behavioral 15, career 30; location pass or fail"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Grounded drafts",
+      "items": [
+        "Profile file, master CV and CLAUDE.md are the only fact sources",
+        "Every requirement is matched or honestly gapped"
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 165,
+      "to": 315,
+      "label": "Evaluate"
+    },
+    {
+      "from": 311,
+      "to": 349,
+      "label": "Draft"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "drafter",
+      "from": 180,
+      "to": 336,
+      "type": "backend"
+    },
+    {
+      "participant": "web",
+      "from": 208,
+      "to": 246,
+      "type": "external"
+    },
+    {
+      "participant": "files",
+      "from": 326,
+      "to": 336,
+      "type": "database"
+    }
+  ]
+}

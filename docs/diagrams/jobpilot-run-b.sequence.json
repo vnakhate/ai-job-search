@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "JobPilot run, part 2: review, draft, and handoff",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "views": [
+      {
+        "id": "review",
+        "label": "Review gate",
+        "focus": [
+          "candidate",
+          "worker",
+          "agent"
+        ],
+        "note": "The web app polls while a run is active; drafting waits for the candidate's ticks."
+      },
+      {
+        "id": "draft",
+        "label": "Draft and hand off",
+        "focus": [
+          "agent",
+          "ai",
+          "candidate"
+        ],
+        "note": "One draft per approved role, then the bundle the local workflow imports."
+      }
+    ],
+    "viewBox": [
+      1080,
+      504
+    ]
+  },
+  "participants": [
+    {
+      "id": "candidate",
+      "type": "external",
+      "label": "Candidate",
+      "sublabel": "browser or iPhone"
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Worker",
+      "sublabel": "/api · auth + origin"
+    },
+    {
+      "id": "agent",
+      "type": "database",
+      "label": "AccountAgent",
+      "sublabel": "Durable Object"
+    },
+    {
+      "id": "ai",
+      "type": "cloud",
+      "label": "Workers AI",
+      "sublabel": "llama-3.3-70b"
+    }
+  ],
+  "messages": [
+    {
+      "id": "poll",
+      "from": "candidate",
+      "to": "worker",
+      "y": 185,
+      "label": "GET /api/account, every 4 s",
+      "variant": "dashed"
+    },
+    {
+      "id": "needs-review",
+      "from": "worker",
+      "to": "candidate",
+      "y": 213,
+      "label": "status: review",
+      "variant": "return"
+    },
+    {
+      "id": "decisions",
+      "from": "candidate",
+      "to": "worker",
+      "y": 241,
+      "label": "POST /runs/:id/decisions {approvedIds}",
+      "variant": "emphasis"
+    },
+    {
+      "id": "record-decisions",
+      "from": "worker",
+      "to": "agent",
+      "y": 269,
+      "label": "record decisions, stage draft"
+    },
+    {
+      "id": "draft",
+      "from": "agent",
+      "to": "ai",
+      "y": 303,
+      "label": "draft one approved role"
+    },
+    {
+      "id": "draft-json",
+      "from": "ai",
+      "to": "agent",
+      "y": 331,
+      "label": "cover letter, bullets, notes",
+      "variant": "return"
+    },
+    {
+      "id": "completed",
+      "from": "agent",
+      "to": "candidate",
+      "y": 359,
+      "label": "completed; nothing submitted",
+      "variant": "return"
+    },
+    {
+      "id": "handoff",
+      "from": "candidate",
+      "to": "worker",
+      "y": 393,
+      "label": "GET /runs/:id/handoff"
+    },
+    {
+      "id": "bundle",
+      "from": "worker",
+      "to": "candidate",
+      "y": 421,
+      "label": "jobpilot-handoff-v1 bundle, no profile",
+      "variant": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Human in the loop",
+      "items": [
+        "Only roles with PASS work rights and non-FAIL language can be ticked",
+        "Zero approvals is valid: the run completes with no drafts"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Nothing is sent",
+      "items": [
+        "Completed means text drafts exist; no application was submitted",
+        "Drafts carry verification notes and are labelled unverified"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Handoff",
+      "items": [
+        "Evaluated postings, decisions, drafts and applied marks, never the profile",
+        "The notice shows the tools/import_jobpilot.py command"
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 165,
+      "to": 287,
+      "label": "Review gate"
+    },
+    {
+      "from": 283,
+      "to": 377,
+      "label": "Draft"
+    },
+    {
+      "from": 373,
+      "to": 439,
+      "label": "Handoff"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "worker",
+      "from": 180,
+      "to": 426,
+      "type": "backend"
+    },
+    {
+      "participant": "agent",
+      "from": 264,
+      "to": 364,
+      "type": "database"
+    },
+    {
+      "participant": "ai",
+      "from": 298,
+      "to": 336,
+      "type": "cloud"
+    }
+  ]
+}

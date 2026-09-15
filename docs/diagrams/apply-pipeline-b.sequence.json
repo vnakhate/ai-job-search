@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "/apply, part 2: review, verify the PDFs, and record",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "views": [
+      {
+        "id": "review",
+        "label": "Reviewer session",
+        "focus": [
+          "drafter",
+          "reviewer",
+          "web"
+        ],
+        "note": "A fresh session critiques with exact edits; it cannot see the drafter's reasoning."
+      },
+      {
+        "id": "verify",
+        "label": "Verify and record",
+        "focus": [
+          "drafter",
+          "tools",
+          "files",
+          "user"
+        ],
+        "note": "Compile, measure, read, extract; then the tracker row and archive before the turn ends."
+      }
+    ],
+    "viewBox": [
+      1080,
+      504
+    ]
+  },
+  "participants": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "You",
+      "sublabel": "Claude Code terminal"
+    },
+    {
+      "id": "drafter",
+      "type": "backend",
+      "label": "Drafter",
+      "sublabel": "main Claude session"
+    },
+    {
+      "id": "reviewer",
+      "type": "backend",
+      "label": "Reviewer",
+      "sublabel": "fresh Claude session"
+    },
+    {
+      "id": "web",
+      "type": "external",
+      "label": "Web",
+      "sublabel": "posting · company site"
+    },
+    {
+      "id": "tools",
+      "type": "backend",
+      "label": "LaTeX + tools/",
+      "sublabel": "compile · measure · extract"
+    },
+    {
+      "id": "files",
+      "type": "database",
+      "label": "Repo files",
+      "sublabel": "profile · drafts · tracker"
+    }
+  ],
+  "messages": [
+    {
+      "id": "spawn",
+      "from": "drafter",
+      "to": "reviewer",
+      "y": 185,
+      "label": "spawn with drafts inline",
+      "variant": "emphasis"
+    },
+    {
+      "id": "research",
+      "from": "reviewer",
+      "to": "web",
+      "y": 213,
+      "label": "research company by name, 30-day cache"
+    },
+    {
+      "id": "facts",
+      "from": "web",
+      "to": "reviewer",
+      "y": 241,
+      "label": "facts to verify",
+      "variant": "return"
+    },
+    {
+      "id": "critique",
+      "from": "reviewer",
+      "to": "drafter",
+      "y": 269,
+      "label": "Part A exact edits + Part B critique",
+      "variant": "return"
+    },
+    {
+      "id": "apply-edits",
+      "from": "drafter",
+      "to": "files",
+      "y": 303,
+      "label": "apply edits, never fabricate"
+    },
+    {
+      "id": "compile",
+      "from": "drafter",
+      "to": "tools",
+      "y": 331,
+      "label": "lualatex, xelatex, verify_layout, verify_pdf",
+      "variant": "emphasis"
+    },
+    {
+      "id": "verified",
+      "from": "tools",
+      "to": "drafter",
+      "y": 359,
+      "label": "2-page CV, 1-page letter, ATS text",
+      "variant": "return"
+    },
+    {
+      "id": "record",
+      "from": "drafter",
+      "to": "files",
+      "y": 393,
+      "label": "tracker row drafted + archive posting"
+    },
+    {
+      "id": "present",
+      "from": "drafter",
+      "to": "user",
+      "y": 421,
+      "label": "checklist + files; you submit",
+      "variant": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "Two sessions",
+      "items": [
+        "Drafts are pasted to the reviewer inline",
+        "Edits come back as exact strings; fabricating suggestions are dropped"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Verified before you see it",
+      "items": [
+        "Layout measured for holes and orphans; exactly 2 pages and 1 page",
+        "Text layer checked the way an ATS reads it; gaps never stuffed"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Recorded, not sent",
+      "items": [
+        "A drafted tracker row and the verbatim posting archive",
+        "You submit; /outcome later moves the row to applied"
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 165,
+      "to": 287,
+      "label": "Review"
+    },
+    {
+      "from": 283,
+      "to": 377,
+      "label": "Verify"
+    },
+    {
+      "from": 373,
+      "to": 439,
+      "label": "Record"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "drafter",
+      "from": 180,
+      "to": 426,
+      "type": "backend"
+    },
+    {
+      "participant": "reviewer",
+      "from": 180,
+      "to": 274,
+      "type": "backend"
+    },
+    {
+      "participant": "web",
+      "from": 208,
+      "to": 246,
+      "type": "external"
+    },
+    {
+      "participant": "tools",
+      "from": 326,
+      "to": 364,
+      "type": "backend"
+    },
+    {
+      "participant": "files",
+      "from": 298,
+      "to": 398,
+      "type": "database"
+    }
+  ]
+}

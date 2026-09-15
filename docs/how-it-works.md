@@ -1,6 +1,6 @@
 # How the local workflow works
 
-This page explains the original, local job-search workflow: what the "agents" and "skills" in this repository actually are, how a job moves from a portal search to a submitted application, and where the guardrails live. It is a reader's guide; the files it describes remain the single source of truth (see `AGENTS.md`). For the hosted JobPilot layer that was added later, see [`platform/docs/architecture.md`](../platform/docs/architecture.md); the last section here explains how the two relate. A visual version of this page is [`docs/how-it-works.html`](how-it-works.html).
+This page explains the original, local job-search workflow: what the "agents" and "skills" in this repository actually are, how a job moves from a portal search to a submitted application, and where the guardrails live. It is a reader's guide; the files it describes remain the single source of truth (see `AGENTS.md`). For the hosted JobPilot layer that was added later, see [`platform/docs/architecture.md`](../platform/docs/architecture.md); the last section here explains how the two relate. A visual version of this page is [`docs/how-it-works.html`](how-it-works.html), and six interactive architecture and sequence diagrams generated from the code live under [`docs/diagrams/`](diagrams/index.html).
 
 ## 1. There is no agent code
 
