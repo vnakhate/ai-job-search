@@ -45,7 +45,7 @@ Claude forgets everything between sessions, so every fact that must survive is w
 | File | Written by | Read by | Purpose |
 | --- | --- | --- | --- |
 | `CLAUDE.md` | `/setup` | every command | The candidate profile and the workflow rules for the whole workspace. |
-| `job_scraper/seen_jobs.json` | `/scrape`, `/rank` | `/scrape`, `/rank`, `/upskill` | Every posting ever seen, keyed by `tools/job_key.py`, with fit, status, portal, deadline and rank fields. Fields are only ever added. |
+| `job_scraper/seen_jobs.json` | `/scrape`, `/rank`, `tools/import_jobpilot.py` | `/scrape`, `/rank`, `/upskill` | Every posting ever seen, keyed by `tools/job_key.py`, with fit, status, portal, deadline and rank fields. Fields are only ever added. |
 | `job_search_tracker.csv` | `/apply`, `/outcome`, `/gmail-sync` | `/scrape`, `/rank`, `/interview`, `/upskill`, `/html-report` | One row per application with a fixed status vocabulary: `drafted`, `applied`, `interview`, `offer`, `hired`, `rejected`, `no_response`, `offer_declined`, `withdrawn`. |
 | `documents/applications/<company>_<role>/` | `/apply`, `/outcome`, `/interview` | `/interview`, `/setup` | The archive: the verbatim posting, the submitted CV and letter, `outcome.md`, prep packs and follow-ups. Git-ignored. |
 | `company_research/<company>.json` | the `/apply` reviewer, `/interview` | the same two | A 30-day cache of where each company fact came from. A cache hit is a lead, never a verified claim. |
@@ -143,17 +143,31 @@ The limit: all of this is instruction-level. Nothing sandboxes Claude away from 
 
 The hosted platform under `platform/` reuses the methodology and replaces the runtime.
 
-| Aspect | Local workflow | JobPilot |
+| Dimension | Local workflow (slash commands) | JobPilot (hosted app) |
 | --- | --- | --- |
-| Model | Claude, inside Claude Code | Llama 3.3 70B on Cloudflare Workers AI |
-| Methodology | The nine skill files, read live | `03-writing-style.md` and `04-job-evaluation.md` compiled into the Worker at build time, hashed per run |
-| Search | Six portal CLIs plus WebSearch fallback | Freehire only, direct HTTPS |
-| Gates and budgets | Prose rules the model follows | Code: schema validation, verbatim-evidence checks, call and attempt caps, a review gate before drafting |
-| Reviewer | A second Claude session | None; the harness validates structure, the human reviews content |
-| Output | Compiled, measured, ATS-checked LaTeX PDFs | Unverified cover-letter text and CV bullets |
-| State | Files in the repo | A per-user Durable Object |
+| What it is | Markdown skills and commands run inside Claude Code | Web app plus iOS controller on Cloudflare Workers |
+| Who it suits | Someone comfortable with a terminal, git and LaTeX | Anyone with a browser, no developer tooling |
+| Setup | Private fork, install Bun, Python and LaTeX, run `/setup` | Sign in, fill a nine-field profile form |
+| Model | Claude, in your own Claude Code session | Llama 3.3 70B on Workers AI, JSON output only |
+| Cost | Your Claude Code plan or API tokens | Stripe subscription, 60 runs a month |
+| Job sources | Six portal tools plus WebSearch fallback, more via `/add-portal` | Freehire only: tech roles, last 14 days, 8 per run |
+| Search | Query list from your profile, run per portal by parallel sub-agents | One keyword query written by the model |
+| Screening gates | Work rights and language, followed as written instructions | Same gates, enforced in code; quotes must match the posting |
+| Scoring | Five weighted dimensions, verdict bands, `/rank` triage then full `/apply` evaluation | One fit score with reason, quotes and gaps |
+| Company research | Reviewer agent researches and verifies, 30-day cache | None |
+| Output | Tailored LaTeX CV and letter compiled to PDFs | Unverified cover-letter text and CV bullets |
+| Verification | Three-source grounding audit, reviewer critique, PDF layout measurement, ATS text and keyword check | Schema check, evidence check, verification notes |
+| Your role | Approve after evaluation, read the PDFs, submit yourself; nothing is submitted | Tick roles before drafting; nothing is submitted |
+| Run control | Bound to the conversation; re-run a command | Pause, resume, retry, cancel, durable across devices |
+| After applying | Tracker, per-application archive, `/outcome`, follow-ups, stale sweep, Gmail sync, dashboard, Notion view | 30-run history, an audit export, and a handoff export that `tools/import_jobpilot.py` lands in the local seen-jobs file |
+| Interview prep | `/interview` prep pack and mock interview | None |
+| Learning loop | `/setup` recalibrates from outcomes, `/upskill` plans gaps | None, methodology fixed at build time |
+| Where data lives | Files on your machine; posting text sent to Claude | Per-user Durable Object on Cloudflare; profile sent to Workers AI |
+| Guardrails | Same rules enforced by repeated instructions | Budgets, gates and no-send enforced in code |
+| Maturity | Used by the author for a real search: 69 applications, 20 interviews, one offer | Local demo and CI green; live auth, billing and model quality unverified; not deployed |
+| Best for | Producing, verifying and managing the actual applications | Daily discovery and triage from anywhere |
 
-What did not carry over is deliberate: the PDF pipeline, the reviewer agent, the portal CLIs and the interview and outcome loop remain local. JobPilot drafts text; the local workflow produces the application.
+What did not carry over is deliberate: the PDF pipeline, the reviewer agent, the portal CLIs and the interview and outcome loop remain local. JobPilot drafts text; the local workflow produces the application. The two connect through the handoff export: a finished run downloads as `run_<id>-handoff.json`, and `python3 tools/import_jobpilot.py` adds its postings to `job_scraper/seen_jobs.json` as new candidates, so `/rank` and `/apply` continue from there.
 
 ## 9. Where to read the source
 
@@ -165,4 +179,5 @@ What did not carry over is deliberate: the PDF pipeline, the reviewer agent, the
 | How does ranking avoid loading the backlog? | `.claude/commands/rank.md`, `tools/rank_state.py` |
 | What are the fetch rules? | `.claude/skills/job-application-assistant/09-web-research.md`, `tools/robots_check.py` |
 | How do other agent harnesses use this? | `AGENTS.md` |
+| How does a JobPilot run reach the local files? | `tools/import_jobpilot.py`, `platform/worker/account.ts` (the handoff route) |
 | What does CI check? | `tools/lint_skills.py`, `tools/check_framework_version.py`, `tools/security_guards.py`, `tests/` |

@@ -505,7 +505,7 @@ flowchart TD
         <thead><tr><th style="width:250px">File</th><th style="width:150px">Written by</th><th style="width:190px">Read by</th><th>Purpose</th></tr></thead>
         <tbody>
           <tr><td><code>CLAUDE.md</code></td><td>/setup</td><td>every command</td><td>The candidate profile and the workflow rules for the workspace.</td></tr>
-          <tr><td><code>job_scraper/seen_jobs.json</code></td><td>/scrape, /rank</td><td>/scrape, /rank, /upskill</td><td>Every posting ever seen, keyed by <code>tools/job_key.py</code>, with fit, status, portal, deadline and rank fields.</td></tr>
+          <tr><td><code>job_scraper/seen_jobs.json</code></td><td>/scrape, /rank, <code>tools/import_jobpilot.py</code></td><td>/scrape, /rank, /upskill</td><td>Every posting ever seen, keyed by <code>tools/job_key.py</code>, with fit, status, portal, deadline and rank fields.</td></tr>
           <tr><td><code>job_search_tracker.csv</code></td><td>/apply, /outcome, /gmail-sync</td><td>/scrape, /rank, /interview, /upskill, /html-report</td><td>One row per application. Status vocabulary: <span class="pill pill--info">drafted</span> <span class="pill pill--info">applied</span> <span class="pill pill--info">interview</span> <span class="pill pill--info">offer</span> <span class="pill pill--gold">hired</span> <span class="pill pill--no">rejected</span> <span class="pill pill--warn">no_response</span> <span class="pill pill--warn">offer_declined</span> <span class="pill pill--warn">withdrawn</span></td></tr>
           <tr><td><code>documents/applications/&lt;company&gt;_&lt;role&gt;/</code></td><td>/apply, /outcome, /interview</td><td>/interview, /setup</td><td>The archive: verbatim posting, the submitted CV and letter, <code>outcome.md</code>, prep packs, follow-ups. Git-ignored.</td></tr>
           <tr><td><code>company_research/&lt;company&gt;.json</code></td><td>the /apply reviewer, /interview</td><td>the same two</td><td>A 30-day cache of where each company fact came from. A hit is a lead, never a verified claim.</td></tr>
@@ -595,19 +595,33 @@ flowchart TD
 <section id="jobpilot">
   <div class="wrap">
     <div class="eyebrow a" style="--i:0">08 · How JobPilot relates</div>
-    <h2 class="a" style="--i:1">Same methodology, different runtime.</h2>
-    <p class="section-intro a" style="--i:2">The hosted platform compiles two of the nine methodology files into a Cloudflare Worker and enforces the gates in code. What it leaves out is deliberate: JobPilot drafts text, the local workflow produces the application.</p>
+    <h2 class="a" style="--i:1">Same methodology, different runtime, different half of the job.</h2>
+    <p class="section-intro a" style="--i:2">The hosted platform compiles two of the nine methodology files into a Cloudflare Worker and enforces the gates in code. What it leaves out is deliberate: JobPilot drafts text, the local workflow produces the application. The two connect through the handoff export: a finished run downloads as JSON and <code>tools/import_jobpilot.py</code> adds its postings to the local seen-jobs file as new candidates for <code>/rank</code> and <code>/apply</code>.</p>
     <div class="table-wrap a" style="--i:3">
       <table>
-        <thead><tr><th style="width:150px">Aspect</th><th>Local workflow</th><th>JobPilot</th></tr></thead>
+        <thead><tr><th style="width:150px">Dimension</th><th>Local workflow (slash commands)</th><th>JobPilot (hosted app)</th></tr></thead>
         <tbody>
-          <tr><td><strong>Model</strong></td><td>Claude, inside Claude Code</td><td>Llama 3.3 70B on Cloudflare Workers AI</td></tr>
-          <tr><td><strong>Methodology</strong></td><td>The nine skill files, read live</td><td><code>03-writing-style.md</code> and <code>04-job-evaluation.md</code> compiled in at build time, hashed per run</td></tr>
-          <tr><td><strong>Search</strong></td><td>Six portal CLIs plus WebSearch fallback</td><td>Freehire only, direct HTTPS</td></tr>
-          <tr><td><strong>Gates and budgets</strong></td><td>Prose rules the model follows</td><td>Code: schema validation, verbatim-evidence checks, call and attempt caps, a review gate before drafting</td></tr>
-          <tr><td><strong>Reviewer</strong></td><td>A second Claude session</td><td>None. The harness validates structure; the human reviews content</td></tr>
-          <tr><td><strong>Output</strong></td><td>Compiled, measured, ATS-checked LaTeX PDFs</td><td>Unverified cover-letter text and CV bullets</td></tr>
-          <tr><td><strong>State</strong></td><td>Files in the repo</td><td>A per-user Durable Object</td></tr>
+          <tr><td><strong>What it is</strong></td><td>Markdown skills and commands run inside Claude Code</td><td>Web app plus iOS controller on Cloudflare Workers</td></tr>
+          <tr><td><strong>Who it suits</strong></td><td>Someone comfortable with a terminal, git and LaTeX</td><td>Anyone with a browser, no developer tooling</td></tr>
+          <tr><td><strong>Setup</strong></td><td>Private fork, install Bun, Python and LaTeX, run <code>/setup</code></td><td>Sign in, fill a nine-field profile form</td></tr>
+          <tr><td><strong>Model</strong></td><td>Claude, in your own Claude Code session</td><td>Llama 3.3 70B on Workers AI, JSON output only</td></tr>
+          <tr><td><strong>Cost</strong></td><td>Your Claude Code plan or API tokens</td><td>Stripe subscription, 60 runs a month</td></tr>
+          <tr><td><strong>Job sources</strong></td><td>Six portal tools plus WebSearch fallback, more via <code>/add-portal</code></td><td>Freehire only: tech roles, last 14 days, 8 per run</td></tr>
+          <tr><td><strong>Search</strong></td><td>Query list from your profile, run per portal by parallel sub-agents</td><td>One keyword query written by the model</td></tr>
+          <tr><td><strong>Screening gates</strong></td><td>Work rights and language, followed as written instructions</td><td>Same gates, enforced in code; quotes must match the posting</td></tr>
+          <tr><td><strong>Scoring</strong></td><td>Five weighted dimensions, verdict bands, <code>/rank</code> triage then full <code>/apply</code> evaluation</td><td>One fit score with reason, quotes and gaps</td></tr>
+          <tr><td><strong>Company research</strong></td><td>Reviewer agent researches and verifies, 30-day cache</td><td>None</td></tr>
+          <tr><td><strong>Output</strong></td><td>Tailored LaTeX CV and letter compiled to PDFs</td><td>Unverified cover-letter text and CV bullets</td></tr>
+          <tr><td><strong>Verification</strong></td><td>Three-source grounding audit, reviewer critique, PDF layout measurement, ATS text and keyword check</td><td>Schema check, evidence check, verification notes</td></tr>
+          <tr><td><strong>Your role</strong></td><td>Approve after evaluation, read the PDFs, submit yourself; nothing is submitted</td><td>Tick roles before drafting; nothing is submitted</td></tr>
+          <tr><td><strong>Run control</strong></td><td>Bound to the conversation; re-run a command</td><td>Pause, resume, retry, cancel, durable across devices</td></tr>
+          <tr><td><strong>After applying</strong></td><td>Tracker, per-application archive, <code>/outcome</code>, follow-ups, stale sweep, Gmail sync, dashboard, Notion view</td><td>30-run history, an audit export, and a handoff export that <code>tools/import_jobpilot.py</code> lands in the local seen-jobs file</td></tr>
+          <tr><td><strong>Interview prep</strong></td><td><code>/interview</code> prep pack and mock interview</td><td>None</td></tr>
+          <tr><td><strong>Learning loop</strong></td><td><code>/setup</code> recalibrates from outcomes, <code>/upskill</code> plans gaps</td><td>None, methodology fixed at build time</td></tr>
+          <tr><td><strong>Where data lives</strong></td><td>Files on your machine; posting text sent to Claude</td><td>Per-user Durable Object on Cloudflare; profile sent to Workers AI</td></tr>
+          <tr><td><strong>Guardrails</strong></td><td>Same rules enforced by repeated instructions</td><td>Budgets, gates and no-send enforced in code</td></tr>
+          <tr><td><strong>Maturity</strong></td><td>Used by the author for a real search: 69 applications, 20 interviews, one offer</td><td>Local demo and CI green; live auth, billing and model quality unverified; not deployed</td></tr>
+          <tr><td><strong>Best for</strong></td><td>Producing, verifying and managing the actual applications</td><td>Daily discovery and triage from anywhere</td></tr>
         </tbody>
       </table>
     </div>
@@ -628,6 +642,7 @@ flowchart TD
           <tr><td>How does ranking avoid loading the backlog?</td><td><code>.claude/commands/rank.md</code>, <code>tools/rank_state.py</code></td></tr>
           <tr><td>What are the fetch rules?</td><td><code>.claude/skills/job-application-assistant/09-web-research.md</code>, <code>tools/robots_check.py</code></td></tr>
           <tr><td>How do other agent harnesses use this?</td><td><code>AGENTS.md</code></td></tr>
+          <tr><td>How does a JobPilot run reach the local files?</td><td><code>tools/import_jobpilot.py</code>, <code>platform/worker/account.ts</code></td></tr>
           <tr><td>What does CI check?</td><td><code>tools/lint_skills.py</code>, <code>tools/check_framework_version.py</code>, <code>tools/security_guards.py</code>, <code>tests/</code></td></tr>
         </tbody>
       </table>
