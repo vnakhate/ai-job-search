@@ -26,6 +26,7 @@ For a walkthrough of the workspace, controls, limits and API, see [docs/usage.md
 - Stripe recurring checkout, customer portal and signed webhook verification. Entitlements derive from current subscription state for the configured price, not a checkout redirect or webhook delivery order.
 - Shared web/iOS start, pause, resume, retry, cancel, shortlist review, drafts and history. Pause takes effect after the current bounded step (up to about 25 seconds).
 - Inspectable timelines and validated exports using the actual `@orcareplay/core` and `@orcareplay/schema` packages.
+- A handoff export per run (`GET /api/runs/:id/handoff`, the web UI's **Export for /apply** button) that `tools/import_jobpilot.py` lands in the local `seen_jobs.json`, so `/rank` and `/apply` take over where the hosted app stops. See [docs/usage.md](docs/usage.md).
 
 ## Production setup
 

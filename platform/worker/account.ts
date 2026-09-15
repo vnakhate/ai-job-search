@@ -216,7 +216,7 @@ export class AccountAgent extends DurableObject<Env> {
       return Response.json(r, { status: 201 });
     }
     const match = p.match(
-      /^\/api\/runs\/(run_[a-f0-9]{32})(?:\/(control|decisions|trace))?$/,
+      /^\/api\/runs\/(run_[a-f0-9]{32})(?:\/(control|decisions|trace|handoff|applied))?$/,
     );
     if (!match) throw new HttpError(404, "Not found");
     const r = a.runs.find((r) => r.id === match[1]);
@@ -232,6 +232,60 @@ export class AccountAgent extends DurableObject<Env> {
         scope:
           "Audit summaries only; no wire responses or filesystem snapshots. Orca CLI execution replay is unavailable for this export.",
       });
+    if (match[2] === "handoff" && request.method === "GET")
+      return Response.json({
+        format: "jobpilot-handoff-v1",
+        runId: r.id,
+        exportedAt: new Date().toISOString(),
+        status: r.status,
+        query: r.query,
+        jobs: r.jobs
+          .filter((j) => j.evaluation)
+          .map(
+            ({
+              id,
+              title,
+              company,
+              location,
+              url,
+              description,
+              date,
+              evaluation,
+              decision,
+              draft,
+              applied,
+            }) => ({
+              id,
+              title,
+              company,
+              location,
+              url,
+              date,
+              description,
+              evaluation,
+              decision,
+              draft,
+              applied,
+            }),
+          ),
+        scope:
+          "Evaluated postings with verbatim source text, gates, decisions and unverified drafts, for import into the local workflow. The candidate profile snapshot is not included.",
+      });
+    if (match[2] === "applied" && post) {
+      const { jobId, applied } = z
+        .object({ jobId: z.string().max(300), applied: z.boolean() })
+        .strict()
+        .parse(await request.json());
+      const j = r.jobs.find((j) => j.id === jobId);
+      if (!j) throw new HttpError(400, "Unknown posting");
+      if (applied) j.applied = new Date().toISOString();
+      else delete j.applied;
+      event(r, "note", applied ? "Marked as applied" : "Applied mark removed", {
+        jobId,
+      });
+      await this.save(a);
+      return Response.json(r);
+    }
     if (match[2] === "control" && post) {
       const { action } = z
         .object({ action: z.enum(["pause", "resume", "cancel", "retry"]) })

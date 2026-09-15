@@ -47,7 +47,7 @@ Open **Your profile** and fill in every field except deal-breakers, which is opt
 | Deal-breakers and preferences | Optional, up to 1500 characters |
 | Remote roles only | Checkbox |
 
-The form is validated in the browser and again by the Worker. Saving returns you to Mission control with a confirmation notice.
+The form carries the schema's length limits, so the browser stops most mistakes before saving. When the Worker rejects a field anyway, the notice names it, for example `Invalid input: experience: Too small`. Saving returns you to Mission control with a confirmation notice.
 
 ### Step 2: Start a run
 
@@ -63,13 +63,17 @@ The page polls every four seconds while a run is active. When evaluation finishe
 
 ### Step 3: Review the shortlist
 
-Each opportunity card shows the score, the two gate tags, the model's reason, and an expandable **See evidence & gaps** section with the quoted posting text. Cards for roles you may draft carry a **Prepare draft** checkbox. A role is draftable only when work rights are `PASS` and language is not `FAIL`; everything else shows **Not cleared for drafting** and cannot be selected. `UNVERIFIED` work rights therefore block drafting until you research the role yourself.
+Each opportunity card shows the score, the two gate tags, the model's reason, the posting's age ("Posted today", "Posted 5 days ago", or "Posting date unknown" when the source gave none), and an expandable **See evidence & gaps** section with the quoted posting text. Cards for roles you may draft carry a **Prepare draft** checkbox. A role is draftable only when work rights are `PASS` and language is not `FAIL`; a blocked card says why: **Blocked: work rights**, **Blocked: language**, **Blocked: work rights and language**, or **Verify work rights first** when the posting was silent and you need to research the role yourself.
 
 Tick the roles you want, then press **Finish review & prepare drafts**. Submitting no roles is valid: the run completes with no drafts and you can start a new search.
 
 ### Step 4: Read the drafts
 
-The run moves through a **Draft** stage, one approved role at a time, and finishes as **completed** with the timeline entry "Run completed; nothing submitted". Each approved card gains a **Read application draft** expander containing a cover-letter draft, suggested CV bullets and verification notes. Treat these as text drafts: the model has not verified the employer, the posting's availability or any company fact, and the drafts are not the compiled, PDF-verified documents produced by the repository's local LaTeX workflow.
+The run moves through a **Draft** stage, one approved role at a time, and finishes as **completed** with the timeline entry "Run completed; nothing submitted". Each approved card gains a **Read application draft** expander containing a cover-letter draft, suggested CV bullets and verification notes, with **Copy cover letter**, **Copy CV bullets** and **Download draft (.md)** controls; the Markdown file carries all three sections and the run id. Treat these as text drafts: the model has not verified the employer, the posting's availability or any company fact, and the drafts are not the compiled, PDF-verified documents produced by the repository's local LaTeX workflow.
+
+### Step 5: Mark what you actually sent
+
+Once a run is completed or cancelled, every evaluated card offers **Mark as applied**. It stamps the posting with the date, shows **Applied on <date>** with an **Undo**, survives reloads and appears on the phone, and Run history counts it ("2 opportunities · 1 applied"). The mark is bookkeeping only: it needs no membership, sends nothing, and travels with the posting in the handoff export.
 
 ## 4. Controls, statuses and limits
 
@@ -119,6 +123,18 @@ orca export run_<id> -o audit.html
 
 The trace supports inspection, not byte-exact execution replay.
 
+### Handing a run to the local workflow
+
+JobPilot finds and triages; the repository's slash commands produce the actual application. Once a run has evaluated postings, Mission control shows **⇣ Export for /apply** under the activity timeline. It downloads `run_<id>-handoff.json` and the notice shows the exact import command to run next. The file holds: every evaluated posting with its verbatim text, gates, score, your approve or reject decision, and any draft. The candidate profile is never included.
+
+Import it into the local workflow from the repository root:
+
+```sh
+python3 tools/import_jobpilot.py ~/Downloads/run_<id>-handoff.json          # add --dry-run to preview
+```
+
+Each posting lands in `job_scraper/seen_jobs.json` under the canonical `tools/job_key.py` key with status `new`, portal and source `jobpilot`, the posting's own date, and a fit band derived from JobPilot's result: a failed gate is low, a score of 75 or more with verified work rights is high, a score of 45 or more is medium (unverified work rights included, since they need research first), anything else is low. Postings already present by URL or key are skipped and listed, never overwritten. Then run `/rank` to score the new candidates against the full framework, or `/apply <url>` on one directly. `/scrape` dedupes against the imported entries from then on.
+
 ## 6. The iOS controller
 
 The SwiftUI app controls an existing account; it has no purchase flow.
@@ -153,7 +169,9 @@ All routes live under `/api`. Outside the demo, every route except `config`, `he
 | `GET /api/runs/:id` | One run |
 | `POST /api/runs/:id/control` | Body `{"action":"pause"\|"resume"\|"cancel"\|"retry"}` |
 | `POST /api/runs/:id/decisions` | Body `{"approvedIds":[...]}`, up to 8 unique IDs of draftable jobs; only while the run is in review |
+| `POST /api/runs/:id/applied` | Body `{"jobId":"...","applied":true\|false}`; stamps or clears an applied date on one posting and records a timeline note |
 | `GET /api/runs/:id/trace` | Audit export in `jobpilot-audit-v1` format |
+| `GET /api/runs/:id/handoff` | Evaluated postings with verbatim text, gates, decisions and drafts in `jobpilot-handoff-v1` format, for `tools/import_jobpilot.py`; no profile |
 | `POST /api/billing/checkout` | Create a Stripe Checkout session; returns `{"url"}` |
 | `POST /api/billing/portal` | Create a Stripe customer-portal session; returns `{"url"}` |
 | `POST /api/billing/sync` | Re-read the current Stripe subscription |
@@ -163,7 +181,7 @@ All routes live under `/api`. Outside the demo, every route except `config`, `he
 
 | Status | Meaning |
 | --- | --- |
-| 400 | Invalid input (details listed), malformed JSON, ineligible approval, or bad webhook signature |
+| 400 | Invalid input (details listed and shown in the web notice), malformed JSON, ineligible approval, unknown posting for an applied mark, or bad webhook signature |
 | 401 | Missing or expired token |
 | 402 | Active subscription required |
 | 403 | Origin not allowed, or demo called from a non-local host |
@@ -179,7 +197,7 @@ All routes live under `/api`. Outside the demo, every route except `config`, `he
 cd platform
 npm run check            # context build, type check, 66 unit/contract tests, web build
 npx playwright install chromium   # once
-npm run test:uat         # 9 scenarios × desktop and mobile, on an isolated Worker at :8798
+npm run test:uat         # 14 scenarios × desktop and mobile, on an isolated Worker at :8798
 ```
 
 UAT never touches the interactive demo on port 8797. See [uat.md](uat.md) for the scenario matrix and the manual staging cases that still need a deployed origin.

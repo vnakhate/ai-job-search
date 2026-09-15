@@ -1,3 +1,18 @@
+# Verification — 2026-09-14
+
+## Applicant usability, first cut, and mark as applied
+
+- `npm run check`: **80 unit/contract tests passed**, including the `postedLabel` and `blockReason` helpers and the `POST /api/runs/:id/applied` route (set, clear, unknown posting, timeline note, handoff passthrough); type checks and production build passed.
+- `UAT_BROWSER_CHANNEL=chrome npm run test:uat`: **28 UAT executions passed** (fourteen scenarios in desktop and iPhone-sized Chromium projects, including four new scenarios: validation detail and form limits, clipboard copy and Markdown download, posting age and blocked reason, mark as applied with history count and undo) in under two minutes.
+- One scenario stalled once during a twelve-minute RED run made under memory pressure; the same cancel-then-create sequence reproduced cleanly through the API and the scenario passed in isolation and in two full-suite runs afterwards.
+
+## Handoff bridge to the local workflow
+
+- `npm run check`: **69 unit/contract tests passed** (three new tests pin the `GET /api/runs/:id/handoff` contract: verbatim postings, decisions and drafts, no profile snapshot, evaluated postings only, 404 on an unknown run); Worker/web type checks and production web build passed.
+- `UAT_BROWSER_CHANNEL=chrome npm run test:uat`: **20 UAT executions passed** (ten scenarios in desktop and iPhone-sized Chromium projects, including the new handoff download scenario) in about one minute, on the isolated Worker at port 8798.
+- Repository suite: **440 unit tests passed**, including eight for `tools/import_jobpilot.py`; skill lint, framework-version check and security guards passed.
+- Live check against the interactive demo on port 8797: a completed run's handoff bundle imported into a temporary seen-jobs file with canonical keys and fit bands; a second import of the same bundle skipped both postings as already seen; `tools/rank_state.py candidates` listed the imported entries.
+
 # Verification — 2026-09-13
 
 ## Updated unit and UAT suite

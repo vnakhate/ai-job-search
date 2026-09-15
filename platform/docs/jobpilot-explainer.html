@@ -387,6 +387,9 @@ flowchart TD
           <li><strong>Pause · Resume · Retry · Cancel run</strong> by status</li>
           <li><strong>Finish review &amp; prepare drafts</strong> during review</li>
           <li><strong>↺ Inspect run timeline</strong> scrubber and audit export</li>
+          <li><strong>⇣ Export for /apply</strong> hands evaluated postings to the local workflow, with the import command shown</li>
+          <li><strong>Mark as applied</strong> stamps a date on a posting once the run is finished</li>
+          <li><strong>Copy · Download draft</strong> on every approved role</li>
         </ul>
       </div>
       <div class="ve-card page-card a" style="--i:4">
@@ -425,7 +428,7 @@ flowchart TD
       <div class="mock a" style="--i:3" aria-label="Annotated opportunity card">
         <div class="row">
           <div class="mark">E</div>
-          <div class="title"><h4>Platform Engineer <span class="callout-num">1</span></h4><p>Example Labs · Remote</p></div>
+          <div class="title"><h4>Platform Engineer <span class="callout-num">1</span></h4><p>Example Labs · Remote · Posted today</p></div>
           <div class="score">88<small>fit / 100 <span class="callout-num" style="margin-left:4px">2</span></small></div>
         </div>
         <p class="reason">Your stated skills align with this role. <span class="callout-num">3</span></p>
@@ -442,12 +445,12 @@ flowchart TD
       </div>
       <div class="ve-card ve-card--recessed a" style="--i:4">
         <ol class="keys">
-          <li><div><strong>Title, company, location</strong><span>From the source posting. The link opens the original only if it is a plain HTTPS URL.</span></div></li>
+          <li><div><strong>Title, company, location, age</strong><span>From the source posting, with how long ago it was posted. The link opens the original only if it is a plain HTTPS URL.</span></div></li>
           <li><div><strong>Fit score</strong><span>0 to 100 from the model. Any failed gate forces 0. Green when the role is draftable.</span></div></li>
           <li><div><strong>Reason</strong><span>The model's one-paragraph rationale, escaped before rendering.</span></div></li>
           <li><div><strong>Two gates</strong><span>Work rights: PASS, FAIL or UNVERIFIED. Language: PASS, FAIL or FLAG. Silence in the posting is UNVERIFIED, never PASS.</span></div></li>
           <li><div><strong>Evidence and gaps</strong><span>One to eight quotes that must appear in the posting text, or the step fails and retries. Gaps are the model's honest unknowns.</span></div></li>
-          <li><div><strong>Prepare draft</strong><span>Only offered when work rights are PASS and language is not FAIL. Everything else reads "Not cleared for drafting".</span></div></li>
+          <li><div><strong>Prepare draft</strong><span>Only offered when work rights are PASS and language is not FAIL. A blocked card says which gate blocked it, or asks you to verify work rights first.</span></div></li>
         </ol>
       </div>
     </div>
@@ -572,7 +575,7 @@ flowchart TD
           <li><b>Search</b><span>Freehire, up to 8 postings; source IDs seen in your last 30 runs are dropped.</span></li>
           <li><b>Model</b><span>Workers AI <code>llama-3.3-70b-instruct-fp8-fast</code> with schema-validated output.</span></li>
           <li><b>Billing</b><span>Active Stripe subscription required to start, resume, retry or review.</span></li>
-          <li><b>State</b><span>SQLite-backed Durable Objects on Cloudflare.</span></li>
+          <li><b>State</b><span>SQLite-backed Durable Objects on Cloudflare; a handoff export bridges to the local files.</span></li>
           <li><b>Network</b><span>Browser origin must equal <code>APP_ORIGIN</code>.</span></li>
         </ul>
       </div>
@@ -583,7 +586,7 @@ flowchart TD
 <section id="api">
   <div class="wrap">
     <div class="eyebrow a" style="--i:0">07 · API at a glance</div>
-    <h2 class="a" style="--i:1">Thirteen routes under <code style="font-size:0.6em;vertical-align:middle">/api</code>.</h2>
+    <h2 class="a" style="--i:1">Fifteen routes under <code style="font-size:0.6em;vertical-align:middle">/api</code>.</h2>
     <p class="section-intro a" style="--i:2">Outside the demo every route except <code>config</code>, <code>health</code> and the webhook needs a bearer token. Responses are JSON and never cached. Repeating a run's request UUID returns the same run instead of reserving quota twice.</p>
     <div class="table-wrap a" style="--i:3">
       <table>
@@ -597,7 +600,9 @@ flowchart TD
           <tr><td><code>GET /api/runs/:id</code></td><td>One run</td><td><span class="pill pill--no">404</span></td></tr>
           <tr><td><code>POST /api/runs/:id/control</code></td><td><code>pause</code> · <code>resume</code> · <code>cancel</code> · <code>retry</code></td><td><span class="pill pill--warn">409</span></td></tr>
           <tr><td><code>POST /api/runs/:id/decisions</code></td><td>Up to 8 unique approved IDs, all draftable, only while in review</td><td><span class="pill pill--no">400</span> <span class="pill pill--warn">409</span></td></tr>
+          <tr><td><code>POST /api/runs/:id/applied</code></td><td>Stamp or clear an applied date on one posting</td><td><span class="pill pill--no">400</span></td></tr>
           <tr><td><code>GET /api/runs/:id/trace</code></td><td>Audit export, <code>jobpilot-audit-v1</code></td><td></td></tr>
+          <tr><td><code>GET /api/runs/:id/handoff</code></td><td>Evaluated postings with text, gates, decisions and drafts for <code>tools/import_jobpilot.py</code>; never the profile</td><td><span class="pill pill--no">404</span></td></tr>
           <tr><td><code>POST /api/billing/checkout</code></td><td>Stripe Checkout session URL</td><td><span class="pill pill--warn">409</span> <span class="pill pill--warn">503</span></td></tr>
           <tr><td><code>POST /api/billing/portal</code></td><td>Stripe customer-portal URL</td><td><span class="pill pill--warn">409</span></td></tr>
           <tr><td><code>POST /api/billing/sync</code></td><td>Re-read the current subscription</td><td></td></tr>

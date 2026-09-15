@@ -6,6 +6,8 @@ import {
   type Job,
   canDraft,
   safeUrl,
+  postedLabel,
+  blockReason,
 } from "../worker/contracts";
 const root = document.querySelector<HTMLDivElement>("#app")!;
 let config: Config;
@@ -39,7 +41,12 @@ async function api(path: string, method = "GET", body?: unknown) {
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   const data = (await r.json()) as any;
-  if (!r.ok) throw new Error(data.error || "Request failed");
+  if (!r.ok)
+    throw new Error(
+      Array.isArray(data.details) && data.details.length
+        ? `${data.error}: ${data.details.join("; ")}`
+        : data.error || "Request failed",
+    );
   return data;
 }
 function active() {
@@ -112,7 +119,7 @@ function render() {
       )
       .join("") ||
     '<li><span class="dot"></span><strong>Your agent is ready</strong><time>Waiting for your direction</time></li>'
-  }</ol>${r ? '<button class="secondary full" id="replay">↺ Inspect run timeline</button>' : ""}<div class="trust-note"><span>◎</span><div><strong>You make the final call.</strong><p>Your agent prepares drafts. It never submits applications or contacts employers.</p></div></div></section></div>
+  }</ol>${r ? '<button class="secondary full" id="replay">↺ Inspect run timeline</button>' : ""}${r && r.jobs.some((j) => j.evaluation) ? '<button class="secondary full" id="handoff">⇣ Export for /apply</button>' : ""}<div class="trust-note"><span>◎</span><div><strong>You make the final call.</strong><p>Your agent prepares drafts. It never submits applications or contacts employers.</p></div></div></section></div>
   ${r && traceRun === r.id ? `<section class="trace-panel"><div class="section-heading"><h2>Run timeline</h2><button class="secondary" id="export">Download Orca audit export</button></div><p>Recorded activity only. Playback does not call models or repeat tools.</p><input aria-label="Timeline position" id="scrub" type="range" min="0" max="${Math.max(0, r.events.length - 1)}" value="${traceIndex}"><div class="trace-detail"><code>${esc(r.events[traceIndex]?.type)}</code><p>${esc(r.events[traceIndex]?.attrs?.label)}</p></div><button class="secondary" id="play">${replayTimer ? "Pause playback" : "Play timeline"}</button></section>` : ""}`);
   root.querySelector("#start")?.addEventListener("click", start);
   root.querySelector("#setup")?.addEventListener("click", () => {
@@ -170,23 +177,78 @@ function render() {
       }, 850);
     render();
   });
-  root.querySelector("#export")?.addEventListener("click", () =>
+  const download = (path: string, name: string, after?: () => void) =>
     act(async () => {
-      const data = await api(`/runs/${r!.id}/trace`);
-      const href = URL.createObjectURL(
-        new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
-      );
-      const a = document.createElement("a");
-      a.href = href;
-      a.download = r!.id + ".json";
-      a.click();
-      URL.revokeObjectURL(href);
-    }),
+      const data = await api(path);
+      saveFile(name, JSON.stringify(data, null, 2), "application/json");
+      after?.();
+    });
+  root
+    .querySelector("#export")
+    ?.addEventListener("click", () =>
+      download(`/runs/${r!.id}/trace`, r!.id + ".json"),
+    );
+  root.querySelector("#handoff")?.addEventListener("click", () => {
+    const name = r!.id + "-handoff.json";
+    download(`/runs/${r!.id}/handoff`, name, () => {
+      notice = `Exported ${name}. From the repository root run: python3 tools/import_jobpilot.py ~/Downloads/${name}`;
+    });
+  });
+  root.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach(
+    (b) =>
+      (b.onclick = async () => {
+        const job = r?.jobs.find((j) => j.id === b.dataset.job);
+        if (!job?.draft) return;
+        const text =
+          b.dataset.copy === "letter"
+            ? job.draft.coverLetter
+            : job.draft.cvBullets.map((x) => "- " + x).join("\n");
+        try {
+          await navigator.clipboard.writeText(text);
+          const label = b.textContent;
+          b.textContent = "Copied ✓";
+          setTimeout(() => (b.textContent = label), 1500);
+        } catch {
+          notice = "Copy failed; select the text and copy it manually";
+          render();
+        }
+      }),
   );
+  root.querySelectorAll<HTMLButtonElement>("[data-download]").forEach(
+    (b) =>
+      (b.onclick = () => {
+        const job = r?.jobs.find((j) => j.id === b.dataset.download);
+        if (!job?.draft) return;
+        saveFile(
+          `${r!.id}-${job.id}-draft.md`,
+          `# ${job.title} at ${job.company}\n\n## Cover letter\n\n${job.draft.coverLetter}\n\n## Suggested CV bullets\n\n${job.draft.cvBullets.map((x) => "- " + x).join("\n")}\n\n## Verification notes\n\n${job.draft.verificationNotes.map((x) => "- " + x).join("\n")}\n\n_Unverified text draft from JobPilot run ${r!.id}. Check before use._\n`,
+          "text/markdown",
+        );
+      }),
+  );
+  root.querySelectorAll<HTMLElement>("[data-applied]").forEach(
+    (b) =>
+      (b.onclick = () =>
+        act(async () => {
+          await api(`/runs/${r!.id}/applied`, "POST", {
+            jobId: b.dataset.applied,
+            applied: b.dataset.value === "true",
+          });
+          await refresh();
+        })),
+  );
+}
+function saveFile(name: string, text: string, type: string) {
+  const href = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(href);
 }
 function jobCard(j: Job) {
   const e = j.evaluation;
-  return `<article class="job"><div class="job-title"><div class="company-mark">${esc(j.company.slice(0, 1))}</div><div><h3>${esc(j.title)}</h3><p>${esc(j.company)} <span>· ${esc(j.location)}</span></p></div>${e ? `<div class="score ${canDraft(j) ? "good" : ""}">${e.score}<small>fit / 100</small></div>` : '<span class="muted">Evaluating…</span>'}</div>${e ? `<p class="reason">${esc(e.reason)}</p><div class="tags"><span>Work rights: ${esc(e.eligibility.toLowerCase())}</span><span>Language: ${esc(e.language.toLowerCase())}</span></div><details><summary>See evidence & gaps</summary>${e.evidence.map((q) => `<blockquote>${esc(q)}</blockquote>`).join("")}<p>${esc(e.gaps.join(" · "))}</p></details>` : ""}<div class="job-bottom">${safeUrl(j.url) ? `<a href="${esc(safeUrl(j.url))}" target="_blank" rel="noopener noreferrer">View posting ↗</a>` : ""}${active()?.status === "review" ? `<label class="check"><input type="checkbox" name="approve" value="${esc(j.id)}" ${canDraft(j) ? "" : "disabled"}> ${canDraft(j) ? "Prepare draft" : "Not cleared for drafting"}</label>` : ""}</div>${j.draft ? `<details class="draft"><summary>Read application draft</summary><pre>${esc(j.draft.coverLetter)}</pre><h4>Suggested CV bullets</h4><ul>${j.draft.cvBullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul><p>${esc(j.draft.verificationNotes.join(" "))}</p><strong>Unverified text draft · Check before use</strong></details>` : ""}</article>`;
+  return `<article class="job"><div class="job-title"><div class="company-mark">${esc(j.company.slice(0, 1))}</div><div><h3>${esc(j.title)}</h3><p>${esc(j.company)} <span>· ${esc(j.location)} · ${esc(postedLabel(j.date))}</span></p></div>${e ? `<div class="score ${canDraft(j) ? "good" : ""}">${e.score}<small>fit / 100</small></div>` : '<span class="muted">Evaluating…</span>'}</div>${e ? `<p class="reason">${esc(e.reason)}</p><div class="tags"><span>Work rights: ${esc(e.eligibility.toLowerCase())}</span><span>Language: ${esc(e.language.toLowerCase())}</span></div><details><summary>See evidence & gaps</summary>${e.evidence.map((q) => `<blockquote>${esc(q)}</blockquote>`).join("")}<p>${esc(e.gaps.join(" · "))}</p></details>` : ""}<div class="job-bottom">${safeUrl(j.url) ? `<a href="${esc(safeUrl(j.url))}" target="_blank" rel="noopener noreferrer">View posting ↗</a>` : ""}${active()?.status === "review" ? `<label class="check"><input type="checkbox" name="approve" value="${esc(j.id)}" ${canDraft(j) ? "" : "disabled"}> ${canDraft(j) ? "Prepare draft" : esc(blockReason(j) || "Not cleared for drafting")}</label>` : ""}${e && ["completed", "cancelled"].includes(active()?.status || "") ? (j.applied ? `<span class="applied">Applied on ${esc(new Date(j.applied).toLocaleDateString())}</span><button type="button" class="text-button" data-applied="${esc(j.id)}" data-value="false">Undo</button>` : `<button type="button" class="text-button" data-applied="${esc(j.id)}" data-value="true">Mark as applied</button>`) : ""}</div>${j.draft ? `<details class="draft"><summary>Read application draft</summary><pre>${esc(j.draft.coverLetter)}</pre><h4>Suggested CV bullets</h4><ul>${j.draft.cvBullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul><p>${esc(j.draft.verificationNotes.join(" "))}</p><strong>Unverified text draft · Check before use</strong><div class="draft-actions"><button type="button" class="secondary" data-copy="letter" data-job="${esc(j.id)}">Copy cover letter</button><button type="button" class="secondary" data-copy="bullets" data-job="${esc(j.id)}">Copy CV bullets</button><button type="button" class="secondary" data-download="${esc(j.id)}">Download draft (.md)</button></div></details>` : ""}</article>`;
 }
 function profile() {
   const p = account?.profile;
@@ -210,8 +272,17 @@ function profile() {
       p?.constraints || "",
     ],
   ];
+  const limits: Record<string, string> = {
+    name: 'maxlength="100"',
+    role: 'minlength="2" maxlength="150"',
+    skills: 'minlength="2" maxlength="2000"',
+    experience: 'minlength="20" maxlength="6000"',
+    languages: 'minlength="2" maxlength="1000"',
+    workRights: 'minlength="2" maxlength="1500"',
+    constraints: 'maxlength="1500"',
+  };
   shell(
-    `<div class="page-heading"><div><span class="eyebrow">A BETTER SEARCH STARTS WITH YOU</span><h1>Your profile.</h1><p>Your agent works from the facts you share. Keep them specific and accurate.</p></div></div><form id="profile-form" class="form-panel">${fields.map(([name, label, type, value]) => `<label>${label}${type === "textarea" ? `<textarea name="${name}" ${name === "constraints" ? "" : "required"} rows="3">${esc(value)}</textarea>` : `<input name="${name}" value="${esc(value)}" required ${name === "country" ? 'pattern="[A-Z]{2}" maxlength="2"' : ""}>`}</label>`).join("")}<label class="check"><input name="remote" type="checkbox" ${p?.remote ? "checked" : ""}> Remote roles only</label><p class="muted">Your profile is sent to Workers AI to plan and evaluate your search. Application drafts need your review.</p><button class="primary" ${busy ? "disabled" : ""}>Save profile →</button></form>`,
+    `<div class="page-heading"><div><span class="eyebrow">A BETTER SEARCH STARTS WITH YOU</span><h1>Your profile.</h1><p>Your agent works from the facts you share. Keep them specific and accurate.</p></div></div><form id="profile-form" class="form-panel">${fields.map(([name, label, type, value]) => `<label>${label}${type === "textarea" ? `<textarea name="${name}" ${name === "constraints" ? "" : "required"} ${limits[name] || ""} rows="3">${esc(value)}</textarea>` : `<input name="${name}" value="${esc(value)}" required ${name === "country" ? 'pattern="[A-Z]{2}" maxlength="2"' : limits[name] || ""}>`}</label>`).join("")}<label class="check"><input name="remote" type="checkbox" ${p?.remote ? "checked" : ""}> Remote roles only</label><p class="muted">Your profile is sent to Workers AI to plan and evaluate your search. Application drafts need your review.</p><button class="primary" ${busy ? "disabled" : ""}>Save profile →</button></form>`,
   );
   root.querySelector("form")!.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -249,7 +320,7 @@ function billing() {
 }
 function history() {
   shell(
-    `<div class="page-heading"><div><span class="eyebrow">EVERY STEP, REMEMBERED</span><h1>Your search history.</h1><p>Your latest 30 runs, with decisions and drafts preserved.</p></div></div><section class="history">${account!.runs.map((r) => `<button data-run="${r.id}"><span><strong>${esc(r.query || "New search")}</strong><small>${new Date(r.createdAt).toLocaleString()} · ${r.jobs.length} opportunities</small></span><span class="chip">${esc(status(r))} →</span></button>`).join("") || "<p>No runs yet. Start with your profile.</p>"}</section>`,
+    `<div class="page-heading"><div><span class="eyebrow">EVERY STEP, REMEMBERED</span><h1>Your search history.</h1><p>Your latest 30 runs, with decisions and drafts preserved.</p></div></div><section class="history">${account!.runs.map((r) => `<button data-run="${r.id}"><span><strong>${esc(r.query || "New search")}</strong><small>${new Date(r.createdAt).toLocaleString()} · ${r.jobs.length} opportunities${r.jobs.filter((j) => j.applied).length ? ` · ${r.jobs.filter((j) => j.applied).length} applied` : ""}</small></span><span class="chip">${esc(status(r))} →</span></button>`).join("") || "<p>No runs yet. Start with your profile.</p>"}</section>`,
   );
   root.querySelectorAll<HTMLElement>("[data-run]").forEach(
     (b) =>

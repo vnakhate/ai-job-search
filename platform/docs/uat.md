@@ -31,8 +31,13 @@ The suite runs every scenario in desktop Chrome/Chromium and an iPhone-sized **C
 | Untrusted text | HTML-shaped profile data displays literally and executes no script |
 | Concurrent creation | Identical UUIDs reserve one run; competing runs conflict without double quota use |
 | API rejection boundaries | Unsafe origin, malformed JSON, oversized body and missing run produce correct errors; account responses are not cached |
+| Handoff export | Completed run downloads a `jobpilot-handoff-v1` bundle with both evaluated postings, their decisions, verbatim text and the approved draft; no work-rights profile text; the notice shows the import command |
+| Profile validation detail | Form fields carry the schema's length limits; a Worker rejection names the failing field in the notice |
+| Draft controls | Copy cover letter and CV bullets to the clipboard; download the draft as Markdown with all three sections |
+| Posting age and blocked reason | Cards show the posting's age; a blocked role states which gate blocked it |
+| Mark as applied | Applied date persists across reload, is absent on other postings, is counted in Run history, and can be undone |
 
-The 9 Playwright tests cover these criteria in two viewport projects, for **18 automated UAT executions**. Unit/contract tests separately exercise production JWT claims, OAuth PKCE, Stripe signatures/checkout/subscription states, retry budgets, evidence validation, methodology changes and actual Orca writer integrity.
+The 14 Playwright tests cover these criteria in two viewport projects, for **28 automated UAT executions**. Unit/contract tests separately exercise production JWT claims, OAuth PKCE, Stripe signatures/checkout/subscription states, retry budgets, evidence validation, methodology changes and actual Orca writer integrity.
 
 ## Evidence
 

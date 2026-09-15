@@ -46,6 +46,7 @@ export interface Job {
   evaluation?: Evaluation;
   draft?: z.infer<typeof DraftSchema>;
   decision?: "approved" | "rejected";
+  applied?: string;
 }
 export type Status =
   "running" | "paused" | "review" | "completed" | "cancelled" | "failed";
@@ -100,6 +101,24 @@ export function isDemo(env: Env) {
     env.DEMO_MODE === "true" &&
     /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(env.APP_ORIGIN)
   );
+}
+export function postedLabel(date: string | null, now = Date.now()) {
+  const stamp = date ? Date.parse(date) : NaN;
+  if (!Number.isFinite(stamp)) return "Posting date unknown";
+  const days = Math.floor((now - stamp) / 86400000);
+  if (days <= 0) return "Posted today";
+  if (days === 1) return "Posted yesterday";
+  return `Posted ${days} days ago`;
+}
+export function blockReason(job: Job): string | null {
+  const e = job.evaluation;
+  if (!e || canDraft(job)) return null;
+  const rights = e.eligibility === "FAIL";
+  const language = e.language === "FAIL";
+  if (rights && language) return "Blocked: work rights and language";
+  if (rights) return "Blocked: work rights";
+  if (language) return "Blocked: language";
+  return "Verify work rights first";
 }
 export function canDraft(job: Job) {
   return (

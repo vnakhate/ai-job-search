@@ -810,3 +810,103 @@ describe("Stripe HTTP and checkout boundaries", () => {
     expect(provider).not.toHaveBeenCalled();
   });
 });
+describe("handoff export to the local workflow", () => {
+  it("bundles evaluated postings with verbatim text, decisions and drafts, never the profile", async () => {
+    const s = await started();
+    const r = await toReview(s);
+    await s.call(`/runs/${r.id}/decisions`, "POST", {
+      approvedIds: ["demo-1"],
+    });
+    await s.agent.alarm();
+    await s.agent.alarm();
+    const response = await s.call(`/runs/${r.id}/handoff`);
+    expect(response.status).toBe(200);
+    const bundle = (await response.json()) as any;
+    expect(bundle.format).toBe("jobpilot-handoff-v1");
+    expect(bundle.runId).toBe(r.id);
+    expect(bundle.status).toBe("completed");
+    expect(bundle.query).toBe(profile.role);
+    expect(bundle.jobs).toHaveLength(2);
+    expect(bundle.jobs[0]).toMatchObject({
+      id: "demo-1",
+      decision: "approved",
+    });
+    expect(bundle.jobs[0].description).toContain("DEMO FIXTURE");
+    expect(bundle.jobs[0].evaluation.eligibility).toBe("PASS");
+    expect(bundle.jobs[0].draft.coverLetter).toContain("DEMO DRAFT");
+    expect(bundle.jobs[1]).toMatchObject({
+      id: "demo-2",
+      decision: "rejected",
+    });
+    expect(bundle.jobs[1].draft).toBeUndefined();
+    const text = JSON.stringify(bundle);
+    expect(text).not.toContain("workRights");
+    expect(text).not.toContain(profile.workRights);
+    expect(bundle.scope).toContain("profile");
+  });
+  it("exports only postings that have been evaluated", async () => {
+    const s = await started();
+    await s.agent.alarm();
+    await s.agent.alarm();
+    expect((await s.agent.read()).runs[0].jobs).toHaveLength(2);
+    const bundle = (await (
+      await s.call(`/runs/${s.run.id}/handoff`)
+    ).json()) as any;
+    expect(bundle.status).toBe("running");
+    expect(bundle.jobs).toHaveLength(0);
+  });
+  it("returns 404 for an unknown run", async () => {
+    const s = await started();
+    expect((await s.call(`/runs/run_${"0".repeat(32)}/handoff`)).status).toBe(
+      404,
+    );
+  });
+});
+describe("mark as applied", () => {
+  it("records and clears an applied date on one posting and logs it", async () => {
+    const s = await started();
+    const r = await toReview(s);
+    const res = await s.call(`/runs/${r.id}/applied`, "POST", {
+      jobId: "demo-1",
+      applied: true,
+    });
+    expect(res.status).toBe(200);
+    const run = (await res.json()) as any;
+    expect(run.jobs[0].applied).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(run.jobs[1].applied).toBeUndefined();
+    expect(run.events.at(-1).attrs.label).toBe("Marked as applied");
+    const cleared = (await (
+      await s.call(`/runs/${r.id}/applied`, "POST", {
+        jobId: "demo-1",
+        applied: false,
+      })
+    ).json()) as any;
+    expect(cleared.jobs[0].applied).toBeUndefined();
+    expect(cleared.events.at(-1).attrs.label).toBe("Applied mark removed");
+  });
+  it("rejects an unknown posting", async () => {
+    const s = await started();
+    const r = await toReview(s);
+    expect(
+      (
+        await s.call(`/runs/${r.id}/applied`, "POST", {
+          jobId: "invented",
+          applied: true,
+        })
+      ).status,
+    ).toBe(400);
+  });
+  it("carries the applied date into the handoff bundle", async () => {
+    const s = await started();
+    const r = await toReview(s);
+    await s.call(`/runs/${r.id}/applied`, "POST", {
+      jobId: "demo-1",
+      applied: true,
+    });
+    const bundle = (await (
+      await s.call(`/runs/${r.id}/handoff`)
+    ).json()) as any;
+    expect(bundle.jobs[0].applied).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(bundle.jobs[1].applied).toBeUndefined();
+  });
+});

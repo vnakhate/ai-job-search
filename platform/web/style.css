@@ -953,3 +953,19 @@ button:hover:not(:disabled) {
     gap: 20px;
   }
 }
+
+.draft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.draft-actions .secondary {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.applied {
+  font-size: 13px;
+  font-weight: 600;
+  margin-right: 10px;
+}
